@@ -4,6 +4,7 @@ import Landing from './pages/Landing'
 import Login from './pages/Login'
 import Register from './pages/Register'
 import Dashboard from './pages/Dashboard'
+import Admin from './pages/Admin'
 
 // Protects routes — if not logged in, redirect to login
 function PrivateRoute({ children }) {
@@ -19,6 +20,9 @@ function AppRoutes() {
       <Route path="/register" element={<Register />} />
       <Route path="/dashboard" element={
         <PrivateRoute><Dashboard /></PrivateRoute>
+      } />
+      <Route path="/admin" element={
+        <PrivateRoute><Admin /></PrivateRoute>
       } />
       <Route path="*" element={<Navigate to="/" />} />
     </Routes>

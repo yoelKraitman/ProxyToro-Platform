@@ -4,6 +4,7 @@ import mongoose from 'mongoose'
 import 'dotenv/config'
 import authRoutes from './routes/auth.js'
 import proxyRoutes from './routes/proxy.js'
+import adminRoutes from './routes/admin.js'
 
 const app = express()
 const PORT = process.env.PORT || 4000
@@ -20,6 +21,7 @@ app.get('/api/health', (_req, res) => {
 // Routes
 app.use('/api/auth', authRoutes)
 app.use('/api/proxy', proxyRoutes)
+app.use('/api/admin', adminRoutes)
 
 // Connect to MongoDB, then start the server
 mongoose.connect(process.env.MONGO_URI)
