@@ -1,0 +1,74 @@
+import express from 'express'
+import jwt from 'jsonwebtoken'
+import User from '../models/User.js'
+
+const router = express.Router()
+
+// Generate unique proxy credentials for each user
+function generateProxyCredentials(email) {
+  const base = email.split('@')[0].replace(/[^a-z0-9]/gi, '').toLowerCase()
+  const suffix = Math.random().toString(36).substring(2, 7)
+  return {
+    proxyUsername: `pt_${base}_${suffix}`,
+    proxyPassword: Math.random().toString(36).substring(2, 14)
+  }
+}
+
+// POST /api/auth/register
+router.post('/register', async (req, res) => {
+  try {
+    const { email, password } = req.body
+
+    if (!email || !password)
+      return res.status(400).json({ message: 'Email and password are required' })
+
+    if (password.length < 6)
+      return res.status(400).json({ message: 'Password must be at least 6 characters' })
+
+    const exists = await User.findOne({ email })
+    if (exists)
+      return res.status(400).json({ message: 'Email already registered' })
+
+    const { proxyUsername, proxyPassword } = generateProxyCredentials(email)
+
+    const user = await User.create({ email, password, proxyUsername, proxyPassword })
+
+    const token = jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET, { expiresIn: '7d' })
+
+    res.status(201).json({
+      token,
+      user: { id: user._id, email: user.email, role: user.role, proxyUsername: user.proxyUsername }
+    })
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message })
+  }
+})
+
+// POST /api/auth/login
+router.post('/login', async (req, res) => {
+  try {
+    const { email, password } = req.body
+
+    if (!email || !password)
+      return res.status(400).json({ message: 'Email and password are required' })
+
+    const user = await User.findOne({ email })
+    if (!user)
+      return res.status(401).json({ message: 'Invalid email or password' })
+
+    const match = await user.comparePassword(password)
+    if (!match)
+      return res.status(401).json({ message: 'Invalid email or password' })
+
+    const token = jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET, { expiresIn: '7d' })
+
+    res.json({
+      token,
+      user: { id: user._id, email: user.email, role: user.role, proxyUsername: user.proxyUsername }
+    })
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message })
+  }
+})
+
+export default router

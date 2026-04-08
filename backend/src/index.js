@@ -1,19 +1,33 @@
 import express from 'express'
 import cors from 'cors'
+import mongoose from 'mongoose'
 import 'dotenv/config'
+import authRoutes from './routes/auth.js'
 
 const app = express()
 const PORT = process.env.PORT || 4000
 
-// Middleware — these run on every request
-app.use(cors())           // Allows frontend (different port) to talk to backend
-app.use(express.json())   // Lets us read JSON from request body
+// Middleware
+app.use(cors())
+app.use(express.json())
 
-// Health check route — just to confirm the server is alive
+// Health check
 app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok', message: 'ProxyToro API is running' })
 })
 
-app.listen(PORT, () => {
-  console.log(`ProxyToro backend running on http://localhost:${PORT}`)
-})
+// Routes
+app.use('/api/auth', authRoutes)
+
+// Connect to MongoDB, then start the server
+mongoose.connect(process.env.MONGO_URI)
+  .then(() => {
+    console.log('Connected to MongoDB')
+    app.listen(PORT, () => {
+      console.log(`ProxyToro backend running on http://localhost:${PORT}`)
+    })
+  })
+  .catch((err) => {
+    console.error('MongoDB connection failed:', err.message)
+    process.exit(1)
+  })
