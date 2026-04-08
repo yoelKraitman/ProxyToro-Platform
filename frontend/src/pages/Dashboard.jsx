@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { useNavigate } from 'react-router-dom'
+import axios from 'axios'
 
 const TABS = ['Overview', 'Proxy Generator', 'Billing', 'Account']
 
@@ -9,6 +10,30 @@ export default function Dashboard() {
   const navigate = useNavigate()
   const [activeTab, setActiveTab] = useState('Overview')
   const [copied, setCopied] = useState('')
+
+  // Proxy generator state
+  const [proxyCountry, setProxyCountry] = useState('US')
+  const [proxyCount, setProxyCount] = useState(10)
+  const [proxies, setProxies] = useState([])
+  const [proxyLoading, setProxyLoading] = useState(false)
+  const [proxyError, setProxyError] = useState('')
+
+  const generateProxies = async () => {
+    setProxyLoading(true)
+    setProxyError('')
+    setProxies([])
+    try {
+      const token = localStorage.getItem('token')
+      const res = await axios.get(`/api/proxy/list?country=${proxyCountry}&count=${proxyCount}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      setProxies(res.data.proxies)
+    } catch (err) {
+      setProxyError(err.response?.data?.message || 'Failed to fetch proxies')
+    } finally {
+      setProxyLoading(false)
+    }
+  }
 
   const handleLogout = () => {
     logout()
@@ -141,13 +166,17 @@ export default function Dashboard() {
               {/* Location */}
               <div>
                 <label className="block text-sm text-gray-400 mb-2">Location</label>
-                <select className="w-full bg-gray-800 border border-gray-700 text-white rounded-lg px-4 py-3 focus:outline-none focus:border-purple-500">
-                  <option>United States</option>
-                  <option>United Kingdom</option>
-                  <option>Germany</option>
-                  <option>France</option>
-                  <option>Israel</option>
-                  <option>Any</option>
+                <select
+                  value={proxyCountry}
+                  onChange={e => setProxyCountry(e.target.value)}
+                  className="w-full bg-gray-800 border border-gray-700 text-white rounded-lg px-4 py-3 focus:outline-none focus:border-purple-500"
+                >
+                  <option value="US">United States</option>
+                  <option value="GB">United Kingdom</option>
+                  <option value="DE">Germany</option>
+                  <option value="FR">France</option>
+                  <option value="IL">Israel</option>
+                  <option value="">Any</option>
                 </select>
               </div>
 
@@ -156,26 +185,51 @@ export default function Dashboard() {
                 <label className="block text-sm text-gray-400 mb-2">Amount</label>
                 <input
                   type="number"
-                  defaultValue={10}
+                  value={proxyCount}
+                  onChange={e => setProxyCount(e.target.value)}
                   min={1}
                   max={100}
                   className="w-full bg-gray-800 border border-gray-700 text-white rounded-lg px-4 py-3 focus:outline-none focus:border-purple-500"
                 />
               </div>
 
-              <button className="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-3 rounded-lg transition">
-                Generate Proxies
+              {proxyError && (
+                <div className="bg-red-500/10 border border-red-500/30 text-red-400 px-4 py-3 rounded-lg text-sm">
+                  {proxyError}
+                </div>
+              )}
+
+              <button
+                onClick={generateProxies}
+                disabled={proxyLoading}
+                className="w-full bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white font-semibold py-3 rounded-lg transition"
+              >
+                {proxyLoading ? 'Fetching proxies...' : 'Generate Proxies'}
               </button>
             </div>
 
-            {/* Output placeholder */}
+            {/* Output */}
             <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6">
               <div className="flex justify-between items-center mb-4">
-                <h3 className="text-sm font-medium text-gray-400">Output</h3>
-                <button className="text-xs text-purple-400 hover:text-purple-300">Copy All</button>
+                <h3 className="text-sm font-medium text-gray-400">
+                  Output {proxies.length > 0 && `(${proxies.length} proxies)`}
+                </h3>
+                {proxies.length > 0 && (
+                  <button
+                    onClick={() => copyToClipboard(proxies.map(p => p.formatted).join('\n'), 'all')}
+                    className="text-xs text-purple-400 hover:text-purple-300"
+                  >
+                    {copied === 'all' ? 'Copied!' : 'Copy All'}
+                  </button>
+                )}
               </div>
-              <div className="bg-gray-800 rounded-lg p-4 min-h-32 font-mono text-sm text-gray-500">
-                Your proxies will appear here...
+              <div className="bg-gray-800 rounded-lg p-4 min-h-32 font-mono text-sm">
+                {proxies.length === 0
+                  ? <span className="text-gray-500">Your proxies will appear here...</span>
+                  : proxies.map((p, i) => (
+                    <div key={i} className="text-green-400 leading-relaxed">{p.formatted}</div>
+                  ))
+                }
               </div>
             </div>
           </div>

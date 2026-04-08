@@ -3,6 +3,7 @@ import cors from 'cors'
 import mongoose from 'mongoose'
 import 'dotenv/config'
 import authRoutes from './routes/auth.js'
+import proxyRoutes from './routes/proxy.js'
 
 const app = express()
 const PORT = process.env.PORT || 4000
@@ -18,6 +19,7 @@ app.get('/api/health', (_req, res) => {
 
 // Routes
 app.use('/api/auth', authRoutes)
+app.use('/api/proxy', proxyRoutes)
 
 // Connect to MongoDB, then start the server
 mongoose.connect(process.env.MONGO_URI)
