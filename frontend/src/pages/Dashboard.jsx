@@ -92,6 +92,14 @@ export default function Dashboard() {
         <h1 className="text-xl font-bold text-purple-400">ProxyToro</h1>
         <div className="flex items-center gap-4">
           <span className="text-gray-400 text-sm hidden sm:block">{user?.email}</span>
+          {user?.role === 'admin' && (
+            <button
+              onClick={() => navigate('/admin')}
+              className="text-sm bg-purple-600 hover:bg-purple-700 text-white px-3 py-1 rounded-lg transition"
+            >
+              Admin Panel
+            </button>
+          )}
           <button
             onClick={handleLogout}
             className="text-sm text-gray-400 hover:text-white transition"
