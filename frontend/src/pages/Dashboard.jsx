@@ -119,6 +119,13 @@ export default function Dashboard() {
         </div>
       </div>
 
+      {/* Email verification warning */}
+      {profile && !profile.isVerified && (
+        <div className="bg-yellow-500/10 border-b border-yellow-500/30 px-6 py-3 text-yellow-400 text-sm text-center">
+          ⚠️ Your email is not verified. Check your inbox and click the verification link.
+        </div>
+      )}
+
       {/* Page Content */}
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
 

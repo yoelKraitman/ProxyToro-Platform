@@ -1,6 +1,8 @@
 import express from 'express'
 import jwt from 'jsonwebtoken'
+import crypto from 'crypto'
 import User from '../models/User.js'
+import { sendVerificationEmail } from '../services/email.js'
 
 const router = express.Router()
 
@@ -31,13 +33,27 @@ router.post('/register', async (req, res) => {
 
     const { proxyUsername, proxyPassword } = generateProxyCredentials(email)
 
-    const user = await User.create({ email, password, proxyUsername, proxyPassword })
+    // Generate a random verification token
+    const verificationToken = crypto.randomBytes(32).toString('hex')
+
+    const user = await User.create({
+      email, password, proxyUsername, proxyPassword,
+      verificationToken
+    })
+
+    // Send verification email (don't block registration if it fails)
+    try {
+      await sendVerificationEmail(email, verificationToken)
+    } catch (emailErr) {
+      console.error('Failed to send verification email:', emailErr.message)
+    }
 
     const token = jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET, { expiresIn: '7d' })
 
     res.status(201).json({
       token,
-      user: { id: user._id, email: user.email, role: user.role, proxyUsername: user.proxyUsername }
+      user: { id: user._id, email: user.email, role: user.role, proxyUsername: user.proxyUsername, isVerified: user.isVerified },
+      message: 'Account created! Please check your email to verify your account.'
     })
   } catch (err) {
     res.status(500).json({ message: 'Server error', error: err.message })
@@ -68,6 +84,25 @@ router.post('/login', async (req, res) => {
     })
   } catch (err) {
     res.status(500).json({ message: 'Server error', error: err.message })
+  }
+})
+
+// GET /api/auth/verify/:token — user clicks the link in their email
+router.get('/verify/:token', async (req, res) => {
+  try {
+    const user = await User.findOne({ verificationToken: req.params.token })
+
+    if (!user)
+      return res.status(400).send('<h2>Invalid or expired verification link.</h2>')
+
+    user.isVerified = true
+    user.verificationToken = undefined
+    await user.save()
+
+    // Redirect to frontend login page with success message
+    res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:3000'}/login?verified=true`)
+  } catch (err) {
+    res.status(500).send('<h2>Something went wrong.</h2>')
   }
 })
 

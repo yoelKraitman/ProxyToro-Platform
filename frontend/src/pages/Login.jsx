@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import axios from 'axios'
 import { useAuth } from '../context/AuthContext'
 
@@ -11,6 +11,8 @@ export default function Login() {
 
   const { login } = useAuth()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const justVerified = searchParams.get('verified') === 'true'
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -41,6 +43,12 @@ export default function Login() {
         {/* Card */}
         <div className="bg-gray-900 border border-gray-800 rounded-2xl p-8">
           <form onSubmit={handleSubmit} className="space-y-5">
+
+            {justVerified && (
+              <div className="bg-green-500/10 border border-green-500/30 text-green-400 px-4 py-3 rounded-lg text-sm">
+                Email verified successfully! You can now sign in.
+              </div>
+            )}
 
             {error && (
               <div className="bg-red-500/10 border border-red-500/30 text-red-400 px-4 py-3 rounded-lg text-sm">
