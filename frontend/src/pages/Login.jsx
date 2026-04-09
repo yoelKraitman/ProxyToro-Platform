@@ -25,7 +25,7 @@ export default function Login() {
     setError('')
     setLoading(true)
     try {
-      const res = await axios.post('/api/auth/login', { email, password })
+      const res = await axios.post('/api/auth/login', { email, password }, { timeout: 15000 })
 
       if (res.data.requires2FA) {
         // Server says this user has 2FA — show the code input
@@ -36,7 +36,11 @@ export default function Login() {
         navigate('/dashboard')
       }
     } catch (err) {
-      setError(err.response?.data?.message || 'Something went wrong')
+      if (err.code === 'ECONNABORTED') {
+        setError('Server is waking up, please wait 30 seconds and try again.')
+      } else {
+        setError(err.response?.data?.message || 'Something went wrong')
+      }
     } finally {
       setLoading(false)
     }
