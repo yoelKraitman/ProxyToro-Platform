@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { useNavigate } from 'react-router-dom'
 import axios from 'axios'
+import OTPInput from '../components/OTPInput'
 
 const TABS = ['Overview', 'Proxy Generator', 'Billing', 'Account']
 
@@ -491,6 +492,9 @@ function AccountTab({ user, profile }) {
         </button>
       </div>
 
+      {/* 2FA Section */}
+      <TwoFASection profile={profile} />
+
       {/* Danger Zone */}
       <div className="bg-gray-900 border border-red-900/30 rounded-2xl p-6">
         <h3 className="text-lg font-semibold text-red-400 mb-2">Danger Zone</h3>
@@ -499,6 +503,159 @@ function AccountTab({ user, profile }) {
           Delete Account
         </button>
       </div>
+    </div>
+  )
+}
+
+function TwoFASection({ profile }) {
+  const [qrCode, setQrCode] = useState(null)
+  const [code, setCode] = useState('')
+  const [msg, setMsg] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [step, setStep] = useState('idle') // idle | setup | disable
+
+  const token = localStorage.getItem('token')
+  const headers = { Authorization: `Bearer ${token}` }
+
+  const startSetup = async () => {
+    setLoading(true)
+    try {
+      const res = await axios.post('/api/2fa/setup', {}, { headers })
+      setQrCode(res.data.qrCode)
+      setStep('setup')
+    } catch (err) {
+      setMsg({ type: 'error', text: 'Failed to start 2FA setup' })
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const verifySetup = async () => {
+    setLoading(true)
+    try {
+      await axios.post('/api/2fa/verify', { token: code }, { headers })
+      setMsg({ type: 'success', text: '2FA enabled! You will need your authenticator app at next login.' })
+      setStep('idle')
+      setQrCode(null)
+      setCode('')
+    } catch (err) {
+      setMsg({ type: 'error', text: err.response?.data?.message || 'Invalid code' })
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const disable2FA = async () => {
+    setLoading(true)
+    try {
+      await axios.post('/api/2fa/disable', { token: code }, { headers })
+      setMsg({ type: 'success', text: '2FA disabled.' })
+      setStep('idle')
+      setCode('')
+    } catch (err) {
+      setMsg({ type: 'error', text: err.response?.data?.message || 'Invalid code' })
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const is2FAEnabled = profile?.twoFactorEnabled
+
+  return (
+    <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6">
+      <h3 className="text-lg font-semibold mb-1">Two-Factor Authentication</h3>
+      <p className="text-gray-400 text-sm mb-4">
+        {is2FAEnabled ? '2FA is currently enabled on your account.' : 'Add an extra layer of security to your account.'}
+      </p>
+
+      {msg && (
+        <p className={`text-sm mb-4 ${msg.type === 'success' ? 'text-green-400' : 'text-red-400'}`}>
+          {msg.text}
+        </p>
+      )}
+
+      {/* Setup flow */}
+      {step === 'setup' && qrCode && (
+        <div className="space-y-4 mb-4">
+          <p className="text-sm text-gray-400">
+            1. Open <strong className="text-white">Google Authenticator</strong> on your phone<br />
+            2. Tap <strong className="text-white">"+"</strong> → <strong className="text-white">"Scan QR code"</strong><br />
+            3. Scan the QR code below<br />
+            4. Enter the 6-digit code shown in the app
+          </p>
+          <img src={qrCode} alt="QR Code" className="w-48 h-48 rounded-xl" />
+          <OTPInput value={code} onChange={setCode} onComplete={async (c) => {
+            setCode(c)
+            setLoading(true)
+            try {
+              await axios.post('/api/2fa/verify', { token: c }, { headers })
+              setMsg({ type: 'success', text: '2FA enabled successfully!' })
+              setStep('idle')
+              setQrCode(null)
+              setCode('')
+            } catch (err) {
+              setMsg({ type: 'error', text: err.response?.data?.message || 'Invalid code' })
+            } finally {
+              setLoading(false)
+            }
+          }} />
+          <div className="flex gap-3">
+            <button
+              onClick={verifySetup}
+              disabled={loading || code.length !== 6}
+              className="bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white font-semibold px-6 py-2 rounded-lg text-sm transition"
+            >
+              {loading ? 'Verifying...' : 'Enable 2FA'}
+            </button>
+            <button
+              onClick={() => { setStep('idle'); setQrCode(null) }}
+              className="text-gray-400 hover:text-white text-sm transition"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Disable flow */}
+      {step === 'disable' && (
+        <div className="space-y-4 mb-4">
+          <p className="text-sm text-gray-400">Enter your current 2FA code to disable it.</p>
+          <OTPInput value={code} onChange={setCode} onComplete={setCode} />
+          <div className="flex gap-3">
+            <button
+              onClick={disable2FA}
+              disabled={loading || code.length !== 6}
+              className="border border-red-500/50 text-red-400 hover:bg-red-500/10 disabled:opacity-50 px-6 py-2 rounded-lg text-sm transition"
+            >
+              {loading ? 'Disabling...' : 'Disable 2FA'}
+            </button>
+            <button
+              onClick={() => { setStep('idle'); setCode('') }}
+              className="text-gray-400 hover:text-white text-sm transition"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
+      {step === 'idle' && (
+        is2FAEnabled
+          ? <button
+              onClick={() => setStep('disable')}
+              className="border border-red-500/50 text-red-400 hover:bg-red-500/10 px-6 py-2 rounded-lg text-sm transition"
+            >
+              Disable 2FA
+            </button>
+          : <button
+              onClick={startSetup}
+              disabled={loading}
+              className="bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white font-semibold px-6 py-2 rounded-lg text-sm transition"
+            >
+              {loading ? 'Loading...' : 'Enable 2FA'}
+            </button>
+      )}
     </div>
   )
 }

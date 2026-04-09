@@ -54,6 +54,13 @@ const userSchema = new mongoose.Schema({
   verificationToken: {
     type: String,
   },
+  twoFactorSecret: {
+    type: String,
+  },
+  twoFactorEnabled: {
+    type: Boolean,
+    default: false,
+  },
   createdAt: {
     type: Date,
     default: Date.now,

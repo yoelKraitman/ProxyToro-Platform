@@ -7,6 +7,7 @@ import proxyRoutes from './routes/proxy.js'
 import adminRoutes from './routes/admin.js'
 import paymentRoutes from './routes/payment.js'
 import userRoutes from './routes/user.js'
+import twofaRoutes from './routes/twofa.js'
 
 const app = express()
 const PORT = process.env.PORT || 4000
@@ -26,6 +27,7 @@ app.use('/api/proxy', proxyRoutes)
 app.use('/api/admin', adminRoutes)
 app.use('/api/payment', paymentRoutes)
 app.use('/api/user', userRoutes)
+app.use('/api/2fa', twofaRoutes)
 
 // Connect to MongoDB, then start the server
 mongoose.connect(process.env.MONGO_URI)

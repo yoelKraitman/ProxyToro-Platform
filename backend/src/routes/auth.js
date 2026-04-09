@@ -1,6 +1,7 @@
 import express from 'express'
 import jwt from 'jsonwebtoken'
 import crypto from 'crypto'
+import speakeasy from 'speakeasy'
 import User from '../models/User.js'
 import { sendVerificationEmail } from '../services/email.js'
 
@@ -76,14 +77,49 @@ router.post('/login', async (req, res) => {
     if (!match)
       return res.status(401).json({ message: 'Invalid email or password' })
 
+    // If 2FA is enabled, don't give token yet — ask for 2FA code
+    if (user.twoFactorEnabled) {
+      return res.json({ requires2FA: true, userId: user._id })
+    }
+
     const token = jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET, { expiresIn: '7d' })
 
     res.json({
       token,
-      user: { id: user._id, email: user.email, role: user.role, proxyUsername: user.proxyUsername }
+      user: { id: user._id, email: user.email, role: user.role, proxyUsername: user.proxyUsername, isVerified: user.isVerified }
     })
   } catch (err) {
     res.status(500).json({ message: 'Server error', error: err.message })
+  }
+})
+
+// POST /api/auth/2fa-login — complete login with 2FA code
+router.post('/2fa-login', async (req, res) => {
+  try {
+    const { userId, token } = req.body
+    const user = await User.findById(userId)
+
+    if (!user || !user.twoFactorEnabled)
+      return res.status(400).json({ message: 'Invalid request' })
+
+    const valid = speakeasy.totp.verify({
+      secret: user.twoFactorSecret,
+      encoding: 'base32',
+      token,
+      window: 1
+    })
+
+    if (!valid)
+      return res.status(401).json({ message: 'Invalid 2FA code' })
+
+    const jwtToken = jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET, { expiresIn: '7d' })
+
+    res.json({
+      token: jwtToken,
+      user: { id: user._id, email: user.email, role: user.role, proxyUsername: user.proxyUsername, isVerified: user.isVerified }
+    })
+  } catch (err) {
+    res.status(500).json({ message: err.message })
   }
 })
 
