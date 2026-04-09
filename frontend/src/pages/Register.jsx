@@ -18,11 +18,15 @@ export default function Register() {
     setLoading(true)
 
     try {
-      const res = await axios.post('/api/auth/register', { email, password })
+      const res = await axios.post('/api/auth/register', { email, password }, { timeout: 15000 })
       login(res.data.user, res.data.token)
       navigate('/dashboard')
     } catch (err) {
-      setError(err.response?.data?.message || 'Something went wrong')
+      if (err.code === 'ECONNABORTED') {
+        setError('Server is waking up, please wait 30 seconds and try again.')
+      } else {
+        setError(err.response?.data?.message || 'Something went wrong. Please try again.')
+      }
     } finally {
       setLoading(false)
     }
