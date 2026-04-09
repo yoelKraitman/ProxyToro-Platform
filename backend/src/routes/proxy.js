@@ -1,5 +1,6 @@
 import express from 'express'
 import { authMiddleware } from '../middleware/auth.js'
+import User from '../models/User.js'
 
 const router = express.Router()
 const WEBSHARE_API = 'https://proxy.webshare.io/api/v2'
@@ -36,6 +37,12 @@ router.get('/list', authMiddleware, async (req, res) => {
       // Format as ip:port:user:pass — standard proxy format
       formatted: `${p.proxy_address}:${p.port}:${p.username}:${p.password}`
     }))
+
+    // Track usage — increment proxies generated count
+    await User.findByIdAndUpdate(req.user.id, {
+      $inc: { 'usage.proxiesGenerated': proxies.length },
+      $set: { 'usage.lastActive': new Date() }
+    })
 
     res.json({ count: proxies.length, proxies })
   } catch (err) {

@@ -32,6 +32,21 @@ const userSchema = new mongoose.Schema({
   planActivatedAt: {
     type: Date,
   },
+  usage: {
+    proxiesGenerated: { type: Number, default: 0 },
+    bandwidthUsed: { type: Number, default: 0 }, // in MB
+    lastActive: { type: Date },
+  },
+  invoices: [
+    {
+      plan: String,
+      amount: Number,
+      currency: String,
+      paymentId: String,
+      status: { type: String, default: 'pending' },
+      createdAt: { type: Date, default: Date.now },
+    }
+  ],
   createdAt: {
     type: Date,
     default: Date.now,

@@ -60,14 +60,23 @@ router.post('/webhook', express.json(), async (req, res) => {
     const { payment_status, order_id } = req.body
 
     if (payment_status === 'confirmed' || payment_status === 'finished') {
-      // order_id format: userId_plan_timestamp
       const [userId, plan] = order_id.split('_')
       const planData = PLANS[plan]
 
       if (userId && planData) {
         await User.findByIdAndUpdate(userId, {
           activePlan: plan,
-          planActivatedAt: new Date()
+          planActivatedAt: new Date(),
+          $push: {
+            invoices: {
+              plan: planData.name,
+              amount: planData.price,
+              currency: 'USDT',
+              paymentId: req.body.payment_id,
+              status: 'paid',
+              createdAt: new Date()
+            }
+          }
         })
       }
     }
