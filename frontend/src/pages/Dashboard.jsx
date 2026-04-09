@@ -153,7 +153,8 @@ export default function Dashboard() {
               <h3 className="text-lg font-semibold mb-4 text-purple-400">Your Proxy Credentials</h3>
               <div className="space-y-3">
                 {[
-                  { label: 'Username', value: user?.proxyUsername },
+                  { label: 'Proxy Username', value: profile?.proxyUsername || user?.proxyUsername },
+                  { label: 'Proxy Password', value: profile?.proxyPassword },
                   { label: 'Email', value: user?.email },
                   { label: 'Role', value: user?.role },
                 ].map(({ label, value }) => (
@@ -161,7 +162,7 @@ export default function Dashboard() {
                     <span className="text-gray-400 text-sm">{label}</span>
                     <div className="flex items-center gap-3">
                       <span className="font-mono text-white text-sm">{value}</span>
-                      {label === 'Username' && (
+                      {(label === 'Proxy Username' || label === 'Proxy Password') && (
                         <button
                           onClick={() => copyToClipboard(value, label)}
                           className="text-xs text-purple-400 hover:text-purple-300 transition"
