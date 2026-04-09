@@ -11,6 +11,25 @@ export default function Dashboard() {
   const [activeTab, setActiveTab] = useState('Overview')
   const [copied, setCopied] = useState('')
 
+  // Payment state
+  const [paymentLoading, setPaymentLoading] = useState('')
+
+  const handlePurchase = async (plan) => {
+    setPaymentLoading(plan)
+    try {
+      const token = localStorage.getItem('token')
+      const res = await axios.post('/api/payment/create', { plan }, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      // Open the payment page in a new tab
+      window.open(res.data.paymentUrl, '_blank')
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to create payment')
+    } finally {
+      setPaymentLoading('')
+    }
+  }
+
   // Proxy generator state
   const [proxyCountry, setProxyCountry] = useState('US')
   const [proxyCount, setProxyCount] = useState(10)
@@ -246,9 +265,9 @@ export default function Dashboard() {
             {/* Plans */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               {[
-                { name: 'Starter', price: '$9', bandwidth: '10 GB', proxies: '100', color: 'gray' },
-                { name: 'Pro', price: '$29', bandwidth: '50 GB', proxies: '500', color: 'purple', popular: true },
-                { name: 'Business', price: '$79', bandwidth: '200 GB', proxies: 'Unlimited', color: 'gray' },
+                { id: 'starter', name: 'Starter', price: '$9', bandwidth: '10 GB', proxies: '100', color: 'gray' },
+                { id: 'pro', name: 'Pro', price: '$29', bandwidth: '50 GB', proxies: '500', color: 'purple', popular: true },
+                { id: 'business', name: 'Business', price: '$79', bandwidth: '200 GB', proxies: 'Unlimited', color: 'gray' },
               ].map(plan => (
                 <div
                   key={plan.name}
@@ -269,12 +288,15 @@ export default function Dashboard() {
                     <li>✓ All locations</li>
                     <li>✓ 24/7 support</li>
                   </ul>
-                  <button className={`w-full py-2 rounded-lg text-sm font-semibold transition ${
-                    plan.popular
-                      ? 'bg-purple-600 hover:bg-purple-700 text-white'
-                      : 'border border-gray-700 hover:border-purple-500 text-gray-300'
-                  }`}>
-                    Get Started
+                  <button
+                    onClick={() => handlePurchase(plan.id)}
+                    disabled={paymentLoading === plan.id}
+                    className={`w-full py-2 rounded-lg text-sm font-semibold transition disabled:opacity-50 ${
+                      plan.popular
+                        ? 'bg-purple-600 hover:bg-purple-700 text-white'
+                        : 'border border-gray-700 hover:border-purple-500 text-gray-300'
+                    }`}>
+                    {paymentLoading === plan.id ? 'Loading...' : 'Get Started'}
                   </button>
                 </div>
               ))}

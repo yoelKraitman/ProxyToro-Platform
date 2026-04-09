@@ -24,6 +24,14 @@ const userSchema = new mongoose.Schema({
   proxyPassword: {
     type: String,
   },
+  activePlan: {
+    type: String,
+    enum: ['none', 'starter', 'pro', 'business'],
+    default: 'none',
+  },
+  planActivatedAt: {
+    type: Date,
+  },
   createdAt: {
     type: Date,
     default: Date.now,
