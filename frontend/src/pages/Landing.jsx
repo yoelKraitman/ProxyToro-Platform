@@ -44,10 +44,10 @@ export default function Landing() {
     <div className="min-h-screen bg-gray-950 text-white">
 
       {/* Navbar */}
-      <nav className="border-b border-gray-800 px-6 py-4 flex items-center justify-between max-w-6xl mx-auto">
+      <nav className="border-b border-gray-800 px-4 sm:px-6 py-4 flex items-center justify-between max-w-6xl mx-auto">
         <h1 className="text-xl font-bold text-purple-400">ProxyToro</h1>
-        <div className="flex items-center gap-4">
-          <Link to="/login" className="text-gray-400 hover:text-white text-sm transition">
+        <div className="flex items-center gap-2 sm:gap-4">
+          <Link to="/login" className="text-gray-400 hover:text-white text-sm transition hidden sm:block">
             Sign In
           </Link>
           <Link
@@ -60,7 +60,7 @@ export default function Landing() {
       </nav>
 
       {/* Hero */}
-      <section className="max-w-6xl mx-auto px-6 py-24 text-center">
+      <section className="max-w-6xl mx-auto px-4 sm:px-6 py-16 sm:py-24 text-center">
         <div className="inline-block bg-purple-500/10 border border-purple-500/20 text-purple-400 text-sm px-4 py-1 rounded-full mb-6">
           Fast · Reliable · Anonymous
         </div>

@@ -150,8 +150,8 @@ export default function Admin() {
               </div>
             </div>
 
-            <div className="bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden">
-              <table className="w-full text-sm">
+            <div className="bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden overflow-x-auto">
+              <table className="w-full text-sm min-w-[700px]">
                 <thead>
                   <tr className="border-b border-gray-800 text-gray-400">
                     <th className="text-left px-6 py-4">Email</th>
