@@ -3,6 +3,8 @@ import { useAuth } from '../context/AuthContext'
 import { useNavigate } from 'react-router-dom'
 import axios from 'axios'
 import OTPInput from '../components/OTPInput'
+import Footer from '../components/Footer'
+import PricingCalculator from '../components/PricingCalculator'
 
 const TABS = ['Overview', 'Proxy Generator', 'Billing', 'Account']
 
@@ -50,8 +52,12 @@ export default function Dashboard() {
   }
 
   // Proxy generator state
+  const [proxyType, setProxyType] = useState('Residential')
   const [proxyCountry, setProxyCountry] = useState('US')
+  const [proxyState, setProxyState] = useState('')
+  const [proxyCity, setProxyCity] = useState('')
   const [proxyCount, setProxyCount] = useState(10)
+  const [proxySticky, setProxySticky] = useState(false)
   const [proxies, setProxies] = useState([])
   const [proxyLoading, setProxyLoading] = useState(false)
   const [proxyError, setProxyError] = useState('')
@@ -62,7 +68,15 @@ export default function Dashboard() {
     setProxies([])
     try {
       const token = localStorage.getItem('token')
-      const res = await axios.get(`/api/proxy/list?country=${proxyCountry}&count=${proxyCount}`, {
+      const params = new URLSearchParams({
+        country: proxyCountry,
+        count: proxyCount,
+        type: proxyType.toLowerCase(),
+        ...(proxyState && { state: proxyState }),
+        ...(proxyCity  && { city:  proxyCity  }),
+        ...(proxyType === 'Residential' && { sticky: proxySticky }),
+      })
+      const res = await axios.get(`/api/proxy/list?${params}`, {
         headers: { Authorization: `Bearer ${token}` }
       })
       setProxies(res.data.proxies)
@@ -211,7 +225,12 @@ export default function Dashboard() {
                   {['Residential', 'Datacenter', 'Mobile'].map(type => (
                     <button
                       key={type}
-                      className="border border-gray-700 hover:border-purple-500 text-gray-300 hover:text-white rounded-lg py-3 text-sm transition"
+                      onClick={() => setProxyType(type)}
+                      className={`rounded-lg py-3 text-sm transition border ${
+                        proxyType === type
+                          ? 'border-purple-500 text-white bg-purple-500/10'
+                          : 'border-gray-700 text-gray-300 hover:border-purple-500 hover:text-white'
+                      }`}
                     >
                       {type}
                     </button>
@@ -219,9 +238,31 @@ export default function Dashboard() {
                 </div>
               </div>
 
+              {/* Credentials */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm text-gray-400 mb-2">Username</label>
+                  <input
+                    type="text"
+                    value={profile?.proxyUsername || ''}
+                    readOnly
+                    className="w-full bg-gray-800 border border-gray-700 text-gray-300 rounded-lg px-4 py-3 font-mono text-sm cursor-default focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm text-gray-400 mb-2">Password</label>
+                  <input
+                    type="text"
+                    value={profile?.proxyPassword || ''}
+                    readOnly
+                    className="w-full bg-gray-800 border border-gray-700 text-gray-300 rounded-lg px-4 py-3 font-mono text-sm cursor-default focus:outline-none"
+                  />
+                </div>
+              </div>
+
               {/* Location */}
               <div>
-                <label className="block text-sm text-gray-400 mb-2">Location</label>
+                <label className="block text-sm text-gray-400 mb-2">Country</label>
                 <select
                   value={proxyCountry}
                   onChange={e => setProxyCountry(e.target.value)}
@@ -236,18 +277,64 @@ export default function Dashboard() {
                 </select>
               </div>
 
+              {/* State & City */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm text-gray-400 mb-2">State <span className="text-gray-600">(optional)</span></label>
+                  <input
+                    type="text"
+                    value={proxyState}
+                    onChange={e => setProxyState(e.target.value)}
+                    placeholder="e.g. California"
+                    className="w-full bg-gray-800 border border-gray-700 text-white rounded-lg px-4 py-3 focus:outline-none focus:border-purple-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm text-gray-400 mb-2">City <span className="text-gray-600">(optional)</span></label>
+                  <input
+                    type="text"
+                    value={proxyCity}
+                    onChange={e => setProxyCity(e.target.value)}
+                    placeholder="e.g. Los Angeles"
+                    className="w-full bg-gray-800 border border-gray-700 text-white rounded-lg px-4 py-3 focus:outline-none focus:border-purple-500"
+                  />
+                </div>
+              </div>
+
               {/* Amount */}
               <div>
-                <label className="block text-sm text-gray-400 mb-2">Amount</label>
+                <label className="block text-sm text-gray-400 mb-2">
+                  Amount <span className="text-gray-600">(max 1000)</span>
+                </label>
                 <input
                   type="number"
                   value={proxyCount}
                   onChange={e => setProxyCount(e.target.value)}
                   min={1}
-                  max={100}
+                  max={1000}
                   className="w-full bg-gray-800 border border-gray-700 text-white rounded-lg px-4 py-3 focus:outline-none focus:border-purple-500"
                 />
               </div>
+
+              {/* Sticky session — only for Residential */}
+              {proxyType === 'Residential' && (
+                <div className="flex items-center justify-between bg-gray-800 border border-gray-700 rounded-lg px-4 py-3">
+                  <div>
+                    <p className="text-sm text-white font-medium">Sticky Session</p>
+                    <p className="text-xs text-gray-400 mt-0.5">Keep the same IP for the entire session</p>
+                  </div>
+                  <button
+                    onClick={() => setProxySticky(v => !v)}
+                    className={`relative w-11 h-6 rounded-full transition-colors duration-200 focus:outline-none ${
+                      proxySticky ? 'bg-purple-600' : 'bg-gray-600'
+                    }`}
+                  >
+                    <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200 ${
+                      proxySticky ? 'translate-x-5' : 'translate-x-0'
+                    }`} />
+                  </button>
+                </div>
+              )}
 
               {proxyError && (
                 <div className="bg-red-500/10 border border-red-500/30 text-red-400 px-4 py-3 rounded-lg text-sm">
@@ -296,47 +383,82 @@ export default function Dashboard() {
           <div className="space-y-6">
             <div>
               <h2 className="text-2xl font-bold mb-1">Plans & Billing</h2>
-              <p className="text-gray-400">Choose a plan that fits your needs.</p>
+              <p className="text-gray-400">Pick your proxy type and bandwidth — price updates instantly.</p>
             </div>
 
-            {/* Plans */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              {[
-                { id: 'starter', name: 'Starter', price: '$9', bandwidth: '10 GB', proxies: '100', color: 'gray' },
-                { id: 'pro', name: 'Pro', price: '$29', bandwidth: '50 GB', proxies: '500', color: 'purple', popular: true },
-                { id: 'business', name: 'Business', price: '$79', bandwidth: '200 GB', proxies: 'Unlimited', color: 'gray' },
-              ].map(plan => (
-                <div
-                  key={plan.name}
-                  className={`bg-gray-900 rounded-2xl p-6 border ${
-                    plan.popular ? 'border-purple-500' : 'border-gray-800'
-                  } relative`}
-                >
-                  {plan.popular && (
-                    <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-purple-600 text-white text-xs px-3 py-1 rounded-full">
-                      Most Popular
-                    </span>
-                  )}
-                  <h3 className="text-lg font-bold mb-1">{plan.name}</h3>
-                  <p className="text-3xl font-bold text-purple-400 mb-4">{plan.price}<span className="text-sm text-gray-400">/mo</span></p>
-                  <ul className="space-y-2 text-sm text-gray-400 mb-6">
-                    <li>✓ {plan.bandwidth} bandwidth</li>
-                    <li>✓ {plan.proxies} proxies</li>
-                    <li>✓ All locations</li>
-                    <li>✓ 24/7 support</li>
-                  </ul>
-                  <button
-                    onClick={() => handlePurchase(plan.id)}
-                    disabled={paymentLoading === plan.id}
-                    className={`w-full py-2 rounded-lg text-sm font-semibold transition disabled:opacity-50 ${
-                      plan.popular
-                        ? 'bg-purple-600 hover:bg-purple-700 text-white'
-                        : 'border border-gray-700 hover:border-purple-500 text-gray-300'
-                    }`}>
-                    {paymentLoading === plan.id ? 'Loading...' : 'Get Started'}
-                  </button>
+            <PricingCalculator
+              showBuyButton
+              onBuy={({ type, gb, total }) => {
+                alert(`Redirecting to payment for ${gb} GB of ${type} proxies — $${total}\n\nPayment integration coming soon.`)
+              }}
+            />
+
+            {/* Affiliate + Sales + Channels */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+
+              {/* Become an Affiliate */}
+              <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 flex flex-col justify-between gap-4">
+                <div>
+                  <h3 className="text-lg font-semibold mb-2">Become an Affiliate</h3>
+                  <p className="text-gray-400 text-sm leading-relaxed">
+                    Earn commissions by referring new customers to ProxyToro. Our team will reach out with full details.
+                  </p>
                 </div>
-              ))}
+                <a
+                  href="mailto:affiliates@proxytoro.com"
+                  className="inline-block text-center bg-purple-600 hover:bg-purple-700 text-white font-semibold px-5 py-2.5 rounded-lg text-sm transition"
+                >
+                  Become an Affiliate
+                </a>
+              </div>
+
+              {/* Talk with Sales + Communication channels */}
+              <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 flex flex-col justify-between gap-4">
+                <div>
+                  <h3 className="text-lg font-semibold mb-2">Talk with Sales</h3>
+                  <p className="text-gray-400 text-sm leading-relaxed">
+                    Need a custom plan or have questions? Our sales team is ready to help you find the right solution.
+                  </p>
+                </div>
+                <a
+                  href="mailto:sales@proxytoro.com"
+                  className="inline-block text-center border border-purple-500 hover:bg-purple-500/10 text-purple-400 hover:text-white font-semibold px-5 py-2.5 rounded-lg text-sm transition"
+                >
+                  Talk with Sales
+                </a>
+                {/* Communication channels */}
+                <div className="border-t border-gray-800 pt-4">
+                  <p className="text-xs text-gray-500 mb-3">Reach us directly:</p>
+                  <div className="flex items-center gap-4">
+                    {/* Telegram */}
+                    <a href="#" aria-label="Telegram" className="text-gray-400 hover:text-purple-400 transition">
+                      <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
+                        <path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/>
+                      </svg>
+                    </a>
+                    {/* Discord */}
+                    <a href="#" aria-label="Discord" className="text-gray-400 hover:text-purple-400 transition">
+                      <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
+                        <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028 14.09 14.09 0 0 0 1.226-1.994.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/>
+                      </svg>
+                    </a>
+                    {/* Email */}
+                    <a href="mailto:sales@proxytoro.com" aria-label="Email" className="text-gray-400 hover:text-purple-400 transition">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
+                        <rect x="2" y="4" width="20" height="16" rx="2"/>
+                        <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>
+                      </svg>
+                    </a>
+                    {/* Phone */}
+                    <a href="tel:+1234567890" aria-label="Phone" className="text-gray-400 hover:text-purple-400 transition">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
+                        <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.6 1.27h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.82a16 16 0 0 0 6.29 6.29l.82-.82a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/>
+                      </svg>
+                    </a>
+                  </div>
+                </div>
+              </div>
+
             </div>
 
             {/* Invoice history */}
@@ -381,6 +503,8 @@ export default function Dashboard() {
         )}
 
       </div>
+
+      <Footer />
     </div>
   )
 }
