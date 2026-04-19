@@ -6,7 +6,14 @@ import OTPInput from '../components/OTPInput'
 import Footer from '../components/Footer'
 import PricingCalculator from '../components/PricingCalculator'
 
-const TABS = ['Dashboard', 'Proxy Generator', 'Payment History', 'Usage', 'Become an Affiliate', 'Account']
+const TABS = [
+  { label: 'Dashboard', icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> },
+  { label: 'Proxy Generator', icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> },
+  { label: 'Payment History', icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> },
+  { label: 'Usage', icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg> },
+  { label: 'Become an Affiliate', icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg> },
+  { label: 'Account', icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg> },
+]
 
 const NAV_LINKS = [
   { label: 'Home', href: '/' },
@@ -140,15 +147,16 @@ export default function Dashboard() {
         <div className="flex gap-1 overflow-x-auto justify-center">
           {TABS.map(tab => (
             <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={`px-4 py-3 text-sm font-medium whitespace-nowrap transition border-b-2 ${
-                activeTab === tab
+              key={tab.label}
+              onClick={() => setActiveTab(tab.label)}
+              className={`flex items-center gap-1.5 px-4 py-3 text-sm font-medium whitespace-nowrap transition border-b-2 ${
+                activeTab === tab.label
                   ? 'border-purple-500 text-purple-400'
                   : 'border-transparent text-gray-400 hover:text-white'
               }`}
             >
-              {tab}
+              {tab.icon}
+              {tab.label}
             </button>
           ))}
         </div>
