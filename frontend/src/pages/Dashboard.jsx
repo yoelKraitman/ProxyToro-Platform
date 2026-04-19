@@ -6,15 +6,22 @@ import OTPInput from '../components/OTPInput'
 import Footer from '../components/Footer'
 import PricingCalculator from '../components/PricingCalculator'
 
-const TABS = ['Overview', 'Proxy Generator', 'Billing', 'Account']
+const TABS = ['Dashboard', 'Proxy Generator', 'Payment History', 'Usage', 'Become an Affiliate', 'Account']
+
+const NAV_LINKS = [
+  { label: 'Home', href: '/' },
+  { label: 'Contact Sales', href: '#' },
+  { label: 'Pricing', href: '/#pricing' },
+  { label: 'Integrations', href: '#' },
+  { label: 'Use Cases', href: '#' },
+  { label: 'Referral Program', href: '#' },
+]
 
 export default function Dashboard() {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
-  const [activeTab, setActiveTab] = useState('Overview')
+  const [activeTab, setActiveTab] = useState('Dashboard')
   const [copied, setCopied] = useState('')
-
-  // Full profile state (usage + invoices)
   const [profile, setProfile] = useState(null)
 
   useEffect(() => {
@@ -32,26 +39,6 @@ export default function Dashboard() {
     fetchProfile()
   }, [])
 
-  // Payment state
-  const [paymentLoading, setPaymentLoading] = useState('')
-
-  const handlePurchase = async (plan) => {
-    setPaymentLoading(plan)
-    try {
-      const token = localStorage.getItem('token')
-      const res = await axios.post('/api/payment/create', { plan }, {
-        headers: { Authorization: `Bearer ${token}` }
-      })
-      // Open the payment page in a new tab
-      window.open(res.data.paymentUrl, '_blank')
-    } catch (err) {
-      alert(err.response?.data?.message || 'Failed to create payment')
-    } finally {
-      setPaymentLoading('')
-    }
-  }
-
-  // Proxy generator state
   const [proxyType, setProxyType] = useState('Residential')
   const [proxyCountry, setProxyCountry] = useState('US')
   const [proxyState, setProxyState] = useState('')
@@ -98,13 +85,33 @@ export default function Dashboard() {
     setTimeout(() => setCopied(''), 2000)
   }
 
-  return (
-    <div className="min-h-screen bg-gray-950 text-white">
+  const bandwidthUsed = profile?.usage?.bandwidthUsed || 0
+  const bandwidthGB = (bandwidthUsed / 1024).toFixed(2)
+  const planName = profile?.activePlan === 'none' ? 'Free Trial' : (profile?.activePlan || 'Free Trial')
 
-      {/* Navbar */}
-      <nav className="border-b border-gray-800 px-6 py-4 flex items-center justify-between">
-        <h1 className="text-xl font-bold text-purple-400">ProxyToro</h1>
-        <div className="flex items-center gap-4">
+  return (
+    <div className="min-h-screen bg-gray-950 text-white flex flex-col">
+
+      {/* Top Navbar */}
+      <nav className="border-b border-gray-800 bg-gray-950 px-6 py-3 flex items-center">
+        {/* Logo — left */}
+        <div className="flex-1">
+          <h1 className="text-xl font-bold text-purple-400">ProxyToro</h1>
+        </div>
+        {/* Nav links — center */}
+        <div className="hidden lg:flex items-center gap-6">
+          {NAV_LINKS.map(link => (
+            <a
+              key={link.label}
+              href={link.href}
+              className="text-sm text-gray-400 hover:text-white transition whitespace-nowrap"
+            >
+              {link.label}
+            </a>
+          ))}
+        </div>
+        {/* Right side — right */}
+        <div className="flex-1 flex items-center justify-end gap-4">
           <span className="text-gray-400 text-sm hidden sm:block">{user?.email}</span>
           {user?.role === 'admin' && (
             <button
@@ -116,16 +123,21 @@ export default function Dashboard() {
           )}
           <button
             onClick={handleLogout}
-            className="text-sm text-gray-400 hover:text-white transition"
+            className="text-sm border border-gray-700 hover:border-gray-500 text-gray-300 hover:text-white px-3 py-1.5 rounded-lg transition flex items-center gap-1.5"
           >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+              <polyline points="16 17 21 12 16 7"/>
+              <line x1="21" y1="12" x2="9" y2="12"/>
+            </svg>
             Logout
           </button>
         </div>
       </nav>
 
-      {/* Tabs */}
-      <div className="border-b border-gray-800 px-6">
-        <div className="flex gap-1 overflow-x-auto">
+      {/* Tab Bar */}
+      <div className="border-b border-gray-800 bg-gray-950 px-6">
+        <div className="flex gap-1 overflow-x-auto justify-center">
           {TABS.map(tab => (
             <button
               key={tab}
@@ -145,42 +157,152 @@ export default function Dashboard() {
       {/* Email verification warning */}
       {profile && !profile.isVerified && (
         <div className="bg-yellow-500/10 border-b border-yellow-500/30 px-6 py-3 text-yellow-400 text-sm text-center">
-          ⚠️ Your email is not verified. Check your inbox and click the verification link.
+          Your email is not verified. Check your inbox and click the verification link.
         </div>
       )}
 
       {/* Page Content */}
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
+      <div className="flex-1 max-w-6xl mx-auto w-full px-4 sm:px-6 py-6 sm:py-8">
 
-        {/* ── OVERVIEW ── */}
-        {activeTab === 'Overview' && (
+        {/* ── DASHBOARD (Overview) ── */}
+        {activeTab === 'Dashboard' && (
           <div className="space-y-6">
             <div>
-              <h2 className="text-2xl font-bold mb-1">Welcome back!</h2>
-              <p className="text-gray-400">Here's a summary of your account.</p>
+              <h2 className="text-2xl font-bold mb-1">Dashboard</h2>
+              <p className="text-gray-400 text-sm">Welcome to your proxy service dashboard</p>
             </div>
 
-            {/* Stats */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div className="bg-gray-900 border border-gray-800 rounded-2xl p-5">
-                <p className="text-gray-400 text-sm mb-1">Active Plan</p>
-                <p className="text-xl font-bold text-purple-400 capitalize">
-                  {profile?.activePlan === 'none' ? 'Free Trial' : profile?.activePlan || 'Free Trial'}
-                </p>
+            {/* 4 Stat Cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+
+              {/* Total Usage */}
+              <div className="bg-gray-900 border border-gray-800 rounded-xl p-5">
+                <div className="flex items-center justify-between mb-3">
+                  <p className="text-gray-400 text-xs font-medium uppercase tracking-wide">Total Usage</p>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4 text-gray-500">
+                    <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+                  </svg>
+                </div>
+                <p className="text-2xl font-bold">{bandwidthGB} GB</p>
+                <p className="text-xs text-gray-500 mt-1">{bandwidthUsed} MB used</p>
               </div>
-              <div className="bg-gray-900 border border-gray-800 rounded-2xl p-5">
-                <p className="text-gray-400 text-sm mb-1">Bandwidth Used</p>
-                <p className="text-xl font-bold">{profile?.usage?.bandwidthUsed || 0} MB</p>
+
+              {/* Active Plan */}
+              <div className="bg-gray-900 border border-gray-800 rounded-xl p-5">
+                <div className="flex items-center justify-between mb-3">
+                  <p className="text-gray-400 text-xs font-medium uppercase tracking-wide">Active Plan</p>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4 text-gray-500">
+                    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+                    <polyline points="15 3 21 3 21 9"/>
+                    <line x1="10" y1="14" x2="21" y2="3"/>
+                  </svg>
+                </div>
+                <p className="text-2xl font-bold text-purple-400 capitalize">{planName}</p>
+                <p className="text-xs text-gray-500 mt-1">{profile?.usage?.proxiesGenerated || 0} proxies generated</p>
               </div>
-              <div className="bg-gray-900 border border-gray-800 rounded-2xl p-5">
-                <p className="text-gray-400 text-sm mb-1">Proxies Generated</p>
-                <p className="text-xl font-bold">{profile?.usage?.proxiesGenerated || 0}</p>
+
+              {/* Quick Actions */}
+              <div className="bg-gray-900 border border-gray-800 rounded-xl p-5 flex flex-col justify-between">
+                <p className="text-gray-400 text-xs font-medium uppercase tracking-wide mb-3">Quick Actions</p>
+                <button
+                  onClick={() => setActiveTab('Proxy Generator')}
+                  className="flex items-center justify-center gap-2 w-full border border-gray-700 hover:border-purple-500 hover:text-purple-400 text-white text-sm font-medium py-2.5 rounded-lg transition"
+                >
+                  Generate Proxies
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4">
+                    <line x1="5" y1="12" x2="19" y2="12"/>
+                    <polyline points="12 5 19 12 12 19"/>
+                  </svg>
+                </button>
               </div>
+
+              {/* Renewal Date */}
+              <div className="bg-gray-900 border border-gray-800 rounded-xl p-5">
+                <div className="flex items-center justify-between mb-3">
+                  <p className="text-gray-400 text-xs font-medium uppercase tracking-wide">Renewal Date</p>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4 text-gray-500">
+                    <circle cx="12" cy="12" r="10"/>
+                    <polyline points="12 6 12 12 16 14"/>
+                  </svg>
+                </div>
+                <p className="text-2xl font-bold">—</p>
+                <p className="text-xs text-gray-500 mt-1">Next billing cycle</p>
+              </div>
+
+            </div>
+
+            {/* Recent Activity + Subscription Status */}
+            <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
+
+              {/* Recent Activity */}
+              <div className="lg:col-span-3 bg-gray-900 border border-gray-800 rounded-xl p-6">
+                <h3 className="font-semibold mb-1">Recent Activity</h3>
+                <p className="text-gray-500 text-xs mb-5">Your recent proxy usage and generations</p>
+                <div className="space-y-3">
+                  {profile?.usage?.proxiesGenerated > 0 ? (
+                    <div className="flex items-center justify-between py-3 border-b border-gray-800">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full bg-green-500/10 flex items-center justify-center shrink-0">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-4 h-4 text-green-400">
+                            <polyline points="20 6 9 17 4 12"/>
+                          </svg>
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium">Proxy Generated</p>
+                          <p className="text-xs text-gray-500">Recently</p>
+                        </div>
+                      </div>
+                      <span className="text-sm text-gray-400">{profile.usage.proxiesGenerated} proxies</span>
+                    </div>
+                  ) : (
+                    <p className="text-gray-500 text-sm py-6 text-center">No activity yet. Generate your first proxies!</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Subscription Status */}
+              <div className="lg:col-span-2 bg-gray-900 border border-gray-800 rounded-xl p-6">
+                <h3 className="font-semibold mb-1">Subscription Status</h3>
+                <p className="text-gray-500 text-xs mb-5">Manage your subscription and billing</p>
+                <div className="space-y-3 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">Plan</span>
+                    <span className="font-medium capitalize">{planName}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">Status</span>
+                    <span className="text-green-400 font-medium">Active</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">Renewal Date</span>
+                    <span className="font-medium">—</span>
+                  </div>
+                  <div className="pt-2">
+                    <div className="flex justify-between text-xs text-gray-500 mb-1.5">
+                      <span>Usage</span>
+                      <span>{bandwidthGB} GB</span>
+                    </div>
+                    <div className="w-full bg-gray-800 rounded-full h-2">
+                      <div
+                        className="bg-purple-500 h-2 rounded-full transition-all"
+                        style={{ width: `${Math.min((bandwidthUsed / (50 * 1024)) * 100, 100).toFixed(1)}%` }}
+                      />
+                    </div>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setActiveTab('Payment History')}
+                  className="mt-5 w-full border border-gray-700 hover:border-purple-500 text-sm text-gray-300 hover:text-white py-2.5 rounded-lg transition font-medium"
+                >
+                  Manage Subscription
+                </button>
+              </div>
+
             </div>
 
             {/* Credentials */}
-            <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6">
-              <h3 className="text-lg font-semibold mb-4 text-purple-400">Your Proxy Credentials</h3>
+            <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
+              <h3 className="font-semibold mb-4 text-purple-400">Your Proxy Credentials</h3>
               <div className="space-y-3">
                 {[
                   { label: 'Proxy Username', value: profile?.proxyUsername || user?.proxyUsername },
@@ -213,10 +335,10 @@ export default function Dashboard() {
           <div className="space-y-6">
             <div>
               <h2 className="text-2xl font-bold mb-1">Proxy Generator</h2>
-              <p className="text-gray-400">Select your options and generate proxies.</p>
+              <p className="text-gray-400 text-sm">Select your options and generate proxies.</p>
             </div>
 
-            <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 space-y-5">
+            <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 space-y-5">
 
               {/* Proxy Type */}
               <div>
@@ -303,9 +425,7 @@ export default function Dashboard() {
 
               {/* Amount */}
               <div>
-                <label className="block text-sm text-gray-400 mb-2">
-                  Amount <span className="text-gray-600">(max 1000)</span>
-                </label>
+                <label className="block text-sm text-gray-400 mb-2">Amount <span className="text-gray-600">(max 1000)</span></label>
                 <input
                   type="number"
                   value={proxyCount}
@@ -316,7 +436,7 @@ export default function Dashboard() {
                 />
               </div>
 
-              {/* Sticky session — only for Residential */}
+              {/* Sticky session */}
               {proxyType === 'Residential' && (
                 <div className="flex items-center justify-between bg-gray-800 border border-gray-700 rounded-lg px-4 py-3">
                   <div>
@@ -352,7 +472,7 @@ export default function Dashboard() {
             </div>
 
             {/* Output */}
-            <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6">
+            <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
               <div className="flex justify-between items-center mb-4">
                 <h3 className="text-sm font-medium text-gray-400">
                   Output {proxies.length > 0 && `(${proxies.length} proxies)`}
@@ -378,12 +498,12 @@ export default function Dashboard() {
           </div>
         )}
 
-        {/* ── BILLING ── */}
-        {activeTab === 'Billing' && (
+        {/* ── PAYMENT HISTORY ── */}
+        {activeTab === 'Payment History' && (
           <div className="space-y-6">
             <div>
               <h2 className="text-2xl font-bold mb-1">Plans & Billing</h2>
-              <p className="text-gray-400">Pick your proxy type and bandwidth — price updates instantly.</p>
+              <p className="text-gray-400 text-sm">Pick your proxy type and bandwidth — price updates instantly.</p>
             </div>
 
             <PricingCalculator
@@ -393,76 +513,8 @@ export default function Dashboard() {
               }}
             />
 
-            {/* Affiliate + Sales + Channels */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-
-              {/* Become an Affiliate */}
-              <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 flex flex-col justify-between gap-4">
-                <div>
-                  <h3 className="text-lg font-semibold mb-2">Become an Affiliate</h3>
-                  <p className="text-gray-400 text-sm leading-relaxed">
-                    Earn commissions by referring new customers to ProxyToro. Our team will reach out with full details.
-                  </p>
-                </div>
-                <a
-                  href="mailto:affiliates@proxytoro.com"
-                  className="inline-block text-center bg-purple-600 hover:bg-purple-700 text-white font-semibold px-5 py-2.5 rounded-lg text-sm transition"
-                >
-                  Become an Affiliate
-                </a>
-              </div>
-
-              {/* Talk with Sales + Communication channels */}
-              <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 flex flex-col justify-between gap-4">
-                <div>
-                  <h3 className="text-lg font-semibold mb-2">Talk with Sales</h3>
-                  <p className="text-gray-400 text-sm leading-relaxed">
-                    Need a custom plan or have questions? Our sales team is ready to help you find the right solution.
-                  </p>
-                </div>
-                <a
-                  href="mailto:sales@proxytoro.com"
-                  className="inline-block text-center border border-purple-500 hover:bg-purple-500/10 text-purple-400 hover:text-white font-semibold px-5 py-2.5 rounded-lg text-sm transition"
-                >
-                  Talk with Sales
-                </a>
-                {/* Communication channels */}
-                <div className="border-t border-gray-800 pt-4">
-                  <p className="text-xs text-gray-500 mb-3">Reach us directly:</p>
-                  <div className="flex items-center gap-4">
-                    {/* Telegram */}
-                    <a href="#" aria-label="Telegram" className="text-gray-400 hover:text-purple-400 transition">
-                      <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
-                        <path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/>
-                      </svg>
-                    </a>
-                    {/* Discord */}
-                    <a href="#" aria-label="Discord" className="text-gray-400 hover:text-purple-400 transition">
-                      <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
-                        <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028 14.09 14.09 0 0 0 1.226-1.994.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/>
-                      </svg>
-                    </a>
-                    {/* Email */}
-                    <a href="mailto:sales@proxytoro.com" aria-label="Email" className="text-gray-400 hover:text-purple-400 transition">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
-                        <rect x="2" y="4" width="20" height="16" rx="2"/>
-                        <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>
-                      </svg>
-                    </a>
-                    {/* Phone */}
-                    <a href="tel:+1234567890" aria-label="Phone" className="text-gray-400 hover:text-purple-400 transition">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
-                        <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.6 1.27h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.82a16 16 0 0 0 6.29 6.29l.82-.82a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/>
-                      </svg>
-                    </a>
-                  </div>
-                </div>
-              </div>
-
-            </div>
-
             {/* Invoice history */}
-            <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6">
+            <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
               <h3 className="text-lg font-semibold mb-4">Invoice History</h3>
               {!profile?.invoices?.length
                 ? <p className="text-gray-500 text-sm">No invoices yet.</p>
@@ -493,6 +545,141 @@ export default function Dashboard() {
                     </tbody>
                   </table>
               }
+            </div>
+          </div>
+        )}
+
+        {/* ── USAGE ── */}
+        {activeTab === 'Usage' && (
+          <div className="space-y-6">
+            <div>
+              <h2 className="text-2xl font-bold mb-1">Usage</h2>
+              <p className="text-gray-400 text-sm">Monitor your proxy usage and bandwidth consumption.</p>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="bg-gray-900 border border-gray-800 rounded-xl p-5">
+                <p className="text-gray-400 text-xs font-medium uppercase tracking-wide mb-3">Bandwidth Used</p>
+                <p className="text-3xl font-bold">{bandwidthGB} <span className="text-lg text-gray-400">GB</span></p>
+                <p className="text-xs text-gray-500 mt-1">{bandwidthUsed} MB total</p>
+              </div>
+              <div className="bg-gray-900 border border-gray-800 rounded-xl p-5">
+                <p className="text-gray-400 text-xs font-medium uppercase tracking-wide mb-3">Proxies Generated</p>
+                <p className="text-3xl font-bold">{profile?.usage?.proxiesGenerated || 0}</p>
+                <p className="text-xs text-gray-500 mt-1">All time</p>
+              </div>
+              <div className="bg-gray-900 border border-gray-800 rounded-xl p-5">
+                <p className="text-gray-400 text-xs font-medium uppercase tracking-wide mb-3">Active Plan</p>
+                <p className="text-3xl font-bold text-purple-400 capitalize">{planName}</p>
+                <p className="text-xs text-gray-500 mt-1">Current subscription</p>
+              </div>
+            </div>
+
+            <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
+              <h3 className="font-semibold mb-4">Bandwidth Overview</h3>
+              <div className="space-y-3">
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-400">Used</span>
+                  <span>{bandwidthGB} GB</span>
+                </div>
+                <div className="w-full bg-gray-800 rounded-full h-3">
+                  <div
+                    className="bg-gradient-to-r from-purple-600 to-purple-400 h-3 rounded-full transition-all"
+                    style={{ width: `${Math.min((bandwidthUsed / (50 * 1024)) * 100, 100).toFixed(1)}%` }}
+                  />
+                </div>
+                <div className="flex justify-between text-xs text-gray-500">
+                  <span>0 GB</span>
+                  <span>50 GB (plan limit)</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── BECOME AN AFFILIATE ── */}
+        {activeTab === 'Become an Affiliate' && (
+          <div className="space-y-6">
+            <div>
+              <h2 className="text-2xl font-bold mb-1">Affiliate Program</h2>
+              <p className="text-gray-400 text-sm">Earn commissions by referring new customers to ProxyToro.</p>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+
+              {/* Become an Affiliate */}
+              <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 flex flex-col justify-between gap-4">
+                <div>
+                  <div className="w-10 h-10 bg-purple-500/10 rounded-xl flex items-center justify-center mb-4">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-5 h-5 text-purple-400">
+                      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                      <circle cx="9" cy="7" r="4"/>
+                      <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                      <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                    </svg>
+                  </div>
+                  <h3 className="text-lg font-semibold mb-2">Become an Affiliate</h3>
+                  <p className="text-gray-400 text-sm leading-relaxed">
+                    Earn commissions by referring new customers to ProxyToro. Our team will reach out with full details about your affiliate dashboard, referral links, and payment structure.
+                  </p>
+                </div>
+                <a
+                  href="mailto:affiliates@proxytoro.com"
+                  className="inline-block text-center bg-purple-600 hover:bg-purple-700 text-white font-semibold px-5 py-2.5 rounded-lg text-sm transition"
+                >
+                  Become an Affiliate
+                </a>
+              </div>
+
+              {/* Talk with Sales */}
+              <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 flex flex-col justify-between gap-4">
+                <div>
+                  <div className="w-10 h-10 bg-purple-500/10 rounded-xl flex items-center justify-center mb-4">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-5 h-5 text-purple-400">
+                      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                    </svg>
+                  </div>
+                  <h3 className="text-lg font-semibold mb-2">Talk with Sales</h3>
+                  <p className="text-gray-400 text-sm leading-relaxed">
+                    Need a custom plan or have questions? Our sales team is ready to help you find the right solution for your business.
+                  </p>
+                </div>
+                <a
+                  href="mailto:sales@proxytoro.com"
+                  className="inline-block text-center border border-purple-500 hover:bg-purple-500/10 text-purple-400 hover:text-white font-semibold px-5 py-2.5 rounded-lg text-sm transition"
+                >
+                  Talk with Sales
+                </a>
+
+                {/* Communication channels */}
+                <div className="border-t border-gray-800 pt-4">
+                  <p className="text-xs text-gray-500 mb-3">Reach us directly:</p>
+                  <div className="flex items-center gap-4">
+                    <a href="#" aria-label="Telegram" className="text-gray-400 hover:text-purple-400 transition">
+                      <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
+                        <path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/>
+                      </svg>
+                    </a>
+                    <a href="#" aria-label="Discord" className="text-gray-400 hover:text-purple-400 transition">
+                      <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
+                        <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028 14.09 14.09 0 0 0 1.226-1.994.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/>
+                      </svg>
+                    </a>
+                    <a href="mailto:sales@proxytoro.com" aria-label="Email" className="text-gray-400 hover:text-purple-400 transition">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
+                        <rect x="2" y="4" width="20" height="16" rx="2"/>
+                        <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>
+                      </svg>
+                    </a>
+                    <a href="tel:+1234567890" aria-label="Phone" className="text-gray-400 hover:text-purple-400 transition">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
+                        <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.6 1.27h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.82a16 16 0 0 0 6.29 6.29l.82-.82a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/>
+                      </svg>
+                    </a>
+                  </div>
+                </div>
+              </div>
+
             </div>
           </div>
         )}
@@ -555,11 +742,11 @@ function AccountTab({ user, profile }) {
     <div className="space-y-6">
       <div>
         <h2 className="text-2xl font-bold mb-1">Account Settings</h2>
-        <p className="text-gray-400">Manage your account details.</p>
+        <p className="text-gray-400 text-sm">Manage your account details.</p>
       </div>
 
       {/* Change Password */}
-      <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 space-y-4">
+      <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 space-y-4">
         <h3 className="text-lg font-semibold">Change Password</h3>
         <div>
           <label className="block text-sm text-gray-400 mb-2">Email</label>
@@ -605,7 +792,7 @@ function AccountTab({ user, profile }) {
       </div>
 
       {/* Reset Proxy Credentials */}
-      <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6">
+      <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
         <h3 className="text-lg font-semibold mb-2">Proxy Credentials</h3>
         <p className="text-gray-400 text-sm mb-4">
           Current username: <span className="font-mono text-purple-400">{profile?.proxyUsername}</span>
@@ -628,7 +815,7 @@ function AccountTab({ user, profile }) {
       <TwoFASection profile={profile} />
 
       {/* Danger Zone */}
-      <div className="bg-gray-900 border border-red-900/30 rounded-2xl p-6">
+      <div className="bg-gray-900 border border-red-900/30 rounded-xl p-6">
         <h3 className="text-lg font-semibold text-red-400 mb-2">Danger Zone</h3>
         <p className="text-gray-400 text-sm mb-4">Once you delete your account, there is no going back.</p>
         <button className="border border-red-500/50 text-red-400 hover:bg-red-500/10 px-6 py-2 rounded-lg text-sm transition">
@@ -644,7 +831,7 @@ function TwoFASection({ profile }) {
   const [code, setCode] = useState('')
   const [msg, setMsg] = useState('')
   const [loading, setLoading] = useState(false)
-  const [step, setStep] = useState('idle') // idle | setup | disable
+  const [step, setStep] = useState('idle')
 
   const token = localStorage.getItem('token')
   const headers = { Authorization: `Bearer ${token}` }
@@ -694,7 +881,7 @@ function TwoFASection({ profile }) {
   const is2FAEnabled = profile?.twoFactorEnabled
 
   return (
-    <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6">
+    <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
       <h3 className="text-lg font-semibold mb-1">Two-Factor Authentication</h3>
       <p className="text-gray-400 text-sm mb-4">
         {is2FAEnabled ? '2FA is currently enabled on your account.' : 'Add an extra layer of security to your account.'}
@@ -706,7 +893,6 @@ function TwoFASection({ profile }) {
         </p>
       )}
 
-      {/* Setup flow */}
       {step === 'setup' && qrCode && (
         <div className="space-y-4 mb-4">
           <p className="text-sm text-gray-400">
@@ -749,7 +935,6 @@ function TwoFASection({ profile }) {
         </div>
       )}
 
-      {/* Disable flow */}
       {step === 'disable' && (
         <div className="space-y-4 mb-4">
           <p className="text-sm text-gray-400">Enter your current 2FA code to disable it.</p>

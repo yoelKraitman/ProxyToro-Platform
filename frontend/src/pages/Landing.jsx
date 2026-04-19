@@ -161,12 +161,12 @@ export default function Landing() {
 
       {/* CTA */}
       <section className="max-w-6xl mx-auto px-6 py-16 text-center">
-        <div className="reveal bg-purple-600/10 border border-purple-500/20 rounded-3xl p-12">
+        <div className="reveal bg-purple-600/10 border border-purple-500/20 rounded-3xl p-8 sm:p-12">
           <h2 className="text-3xl font-bold mb-4">Ready to get started?</h2>
           <p className="text-gray-400 mb-8">Join thousands of users already using ProxyToro.</p>
           <Link
             to="/register"
-            className="bg-purple-600 hover:bg-purple-700 text-white font-semibold px-8 py-4 rounded-xl text-lg transition"
+            className="inline-block whitespace-nowrap bg-purple-600 hover:bg-purple-700 text-white font-semibold px-8 py-4 rounded-xl text-lg transition"
           >
             Create Free Account
           </Link>
