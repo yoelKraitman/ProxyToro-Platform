@@ -74,7 +74,7 @@ export default function Admin() {
   const handleLogout = () => { logout(); navigate('/login') }
 
   useEffect(() => {
-    if (activeTab === 'Users' || activeTab === 'Revenue' || activeTab === 'Payments') fetchUsers()
+    if (activeTab === 'Users' || activeTab === 'Revenue' || activeTab === 'Payments' || activeTab === 'Stats') fetchUsers()
     if (activeTab === 'Stats') fetchStats()
   }, [activeTab])
 
@@ -188,6 +188,9 @@ export default function Admin() {
                 </div>
               </div>
             </div>
+
+            {/* Top 10 paying customers */}
+            <TopCustomers users={users} />
           </div>
         )}
 
@@ -470,6 +473,92 @@ function UsersTab({ users, setUsers, loading, headers, exportCSV, fetchUsers, ad
           </tbody>
         </table>
       </div>
+    </div>
+  )
+}
+
+// ── TOP CUSTOMERS ──
+function TopCustomers({ users }) {
+  // Only paying customers (have at least one invoice), sorted by total spend desc, top 10
+  const top = users
+    .filter(u => u.invoices?.length > 0)
+    .map(u => {
+      const totalSpend = u.invoices.reduce((s, inv) => s + (inv.amount || 0), 0)
+      const planGB = u.planGB || 0
+      const usedMB = u.usage?.bandwidthUsed || 0
+      const usedGB = usedMB / 1024
+      const dataLeft = Math.max(planGB - usedGB, 0)
+      return { ...u, totalSpend, planGB, usedGB, dataLeft }
+    })
+    .sort((a, b) => b.totalSpend - a.totalSpend)
+    .slice(0, 10)
+
+  return (
+    <div className="bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden">
+      <div className="px-6 py-4 border-b border-gray-800 flex items-center justify-between">
+        <div>
+          <h3 className="font-semibold">Top 10 Paying Customers</h3>
+          <p className="text-gray-500 text-xs mt-0.5">Ranked by total spend · shows data remaining in plan</p>
+        </div>
+        <span className="bg-purple-600/20 text-purple-400 text-xs px-2 py-1 rounded-full border border-purple-500/30">
+          {top.length} customers
+        </span>
+      </div>
+
+      {top.length === 0 ? (
+        <div className="px-6 py-10 text-center text-gray-500 text-sm">No paying customers yet.</div>
+      ) : (
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b border-gray-800 text-gray-400">
+              <th className="text-left px-6 py-3 font-medium">#</th>
+              <th className="text-left px-6 py-3 font-medium">Customer</th>
+              <th className="text-left px-6 py-3 font-medium">Plan</th>
+              <th className="text-left px-6 py-3 font-medium">Total Spend</th>
+              <th className="text-left px-6 py-3 font-medium">Data Used</th>
+              <th className="text-left px-6 py-3 font-medium">Data Left</th>
+            </tr>
+          </thead>
+          <tbody>
+            {top.map((u, i) => {
+              const pct = u.planGB > 0 ? Math.min((u.usedGB / u.planGB) * 100, 100) : 0
+              const isLow = pct > 80
+              return (
+                <tr key={u._id} className="border-b border-gray-800/50 hover:bg-gray-800/20 transition-colors">
+                  <td className="px-6 py-4">
+                    <span className={`font-bold text-sm ${i === 0 ? 'text-yellow-400' : i === 1 ? 'text-gray-300' : i === 2 ? 'text-orange-400' : 'text-gray-600'}`}>
+                      #{i + 1}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4">
+                    <p className="font-medium">{u.email}</p>
+                    <p className="text-xs text-gray-500 font-mono">{u.proxyUsername}</p>
+                  </td>
+                  <td className="px-6 py-4 capitalize text-purple-400 font-medium">{u.activePlan || 'Free Trial'}</td>
+                  <td className="px-6 py-4 text-green-400 font-semibold">${u.totalSpend.toFixed(2)}</td>
+                  <td className="px-6 py-4">
+                    <div className="flex flex-col gap-1">
+                      <span className="text-xs text-gray-400">{u.usedGB.toFixed(2)} / {u.planGB} GB</span>
+                      <div className="w-24 bg-gray-800 rounded-full h-1.5">
+                        <div
+                          className={`h-1.5 rounded-full transition-all ${isLow ? 'bg-red-500' : 'bg-purple-500'}`}
+                          style={{ width: `${pct}%` }}
+                        />
+                      </div>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4">
+                    <span className={`font-semibold ${isLow ? 'text-red-400' : 'text-white'}`}>
+                      {u.dataLeft.toFixed(2)} GB
+                    </span>
+                    {isLow && <p className="text-xs text-red-400 mt-0.5">Low!</p>}
+                  </td>
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
+      )}
     </div>
   )
 }
