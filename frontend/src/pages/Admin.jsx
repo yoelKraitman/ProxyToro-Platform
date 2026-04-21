@@ -154,6 +154,7 @@ export default function Admin() {
         {activeTab === 'Users' && (
           <UsersTab
             users={users}
+            setUsers={setUsers}
             loading={loading}
             headers={headers}
             exportCSV={exportCSV}
@@ -241,54 +242,76 @@ export default function Admin() {
 }
 
 // ── USERS TAB ──
-function UsersTab({ users, loading, headers, exportCSV, fetchUsers, addToast }) {
-  const [addGbUser, setAddGbUser] = useState(null)
-  const [gbAmount, setGbAmount] = useState(10)
+function UsersTab({ users, setUsers, loading, headers, exportCSV, fetchUsers, addToast }) {
+  const [addGbUser, setAddGbUser]           = useState(null)
+  const [gbAmount, setGbAmount]             = useState(10)
   const [deleteConfirmUser, setDeleteConfirmUser] = useState(null)
-  const [loadingAction, setLoadingAction] = useState({}) // { userId_action: true }
+  const [fadingRows, setFadingRows]         = useState(new Set())
+  const [loadingAction, setLoadingAction]   = useState({})
 
-  const setLoading = (userId, action, val) =>
+  const setActionLoading = (userId, action, val) =>
     setLoadingAction(prev => ({ ...prev, [`${userId}_${action}`]: val }))
   const isLoading = (userId, action) => !!loadingAction[`${userId}_${action}`]
 
-  const handleReset = async (userId, email) => {
-    setLoading(userId, 'reset', true)
-    try {
-      const res = await axios.post(`/api/admin/users/${userId}/reset-credentials`, {}, { headers })
-      addToast(`Credentials reset for ${email}`)
-      fetchUsers()
-    } catch {
-      addToast('Failed to reset credentials', 'error')
-    } finally {
-      setLoading(userId, 'reset', false)
-    }
-  }
-
+  // Optimistic delete: fade row out → remove from state → fire API
   const handleDelete = async (userId, email) => {
-    setLoading(userId, 'delete', true)
+    setActionLoading(userId, 'delete', true)
+    // 1. Trigger fade-out animation
+    setFadingRows(prev => new Set(prev).add(userId))
+    setDeleteConfirmUser(null)
+    // 2. Wait for animation then remove from local state immediately
+    await new Promise(r => setTimeout(r, 280))
+    setUsers(prev => prev.filter(u => u._id !== userId))
+    setFadingRows(prev => { const s = new Set(prev); s.delete(userId); return s })
+    // 3. Fire API in background
     try {
       await axios.delete(`/api/admin/users/${userId}`, { headers })
       addToast(`${email} deleted`)
-      setDeleteConfirmUser(null)
-      fetchUsers()
     } catch {
-      addToast('Failed to delete user', 'error')
+      // Revert: re-fetch to restore the user
+      addToast('Failed to delete user — restored', 'error')
+      fetchUsers()
     } finally {
-      setLoading(userId, 'delete', false)
+      setActionLoading(userId, 'delete', false)
     }
   }
 
-  const handleAddGb = async (userId, email) => {
-    setLoading(userId, 'gb', true)
+  // Optimistic reset: update proxyUsername in place from API response
+  const handleReset = async (userId, email) => {
+    setActionLoading(userId, 'reset', true)
     try {
-      await axios.post(`/api/admin/users/${userId}/add-gb`, { gb: Number(gbAmount) }, { headers })
-      addToast(`Added ${gbAmount} GB to ${email}`)
-      setAddGbUser(null)
-      fetchUsers()
+      const res = await axios.post(`/api/admin/users/${userId}/reset-credentials`, {}, { headers })
+      setUsers(prev => prev.map(u =>
+        u._id === userId ? { ...u, proxyUsername: res.data.proxyUsername } : u
+      ))
+      addToast(`Credentials reset for ${email}`)
+    } catch {
+      addToast('Failed to reset credentials', 'error')
+    } finally {
+      setActionLoading(userId, 'reset', false)
+    }
+  }
+
+  // Optimistic +GB: update planGB in place immediately
+  const handleAddGb = async (userId, email) => {
+    setActionLoading(userId, 'gb', true)
+    const gb = Number(gbAmount)
+    // Update local state immediately
+    setUsers(prev => prev.map(u =>
+      u._id === userId ? { ...u, planGB: (u.planGB || 0) + gb } : u
+    ))
+    setAddGbUser(null)
+    try {
+      await axios.post(`/api/admin/users/${userId}/add-gb`, { gb }, { headers })
+      addToast(`Added ${gb} GB to ${email}`)
     } catch (err) {
+      // Revert
+      setUsers(prev => prev.map(u =>
+        u._id === userId ? { ...u, planGB: (u.planGB || 0) - gb } : u
+      ))
       addToast(err.response?.data?.message || 'Failed to add GB', 'error')
     } finally {
-      setLoading(userId, 'gb', false)
+      setActionLoading(userId, 'gb', false)
     }
   }
 
@@ -331,23 +354,31 @@ function UsersTab({ users, loading, headers, exportCSV, fetchUsers, addToast }) 
           <tbody>
             {loading ? (
               <tr><td colSpan={7} className="text-center py-12 text-gray-500">
-                <div className="flex items-center justify-center gap-2">
-                  <Spinner /><span>Loading users...</span>
-                </div>
+                <div className="flex items-center justify-center gap-2"><Spinner /><span>Loading users...</span></div>
               </td></tr>
             ) : rows.length === 0 ? (
               <tr><td colSpan={7} className="text-center py-12 text-gray-500">No users found</td></tr>
             ) : rows.map((u, i) => (
               <>
-                <tr key={`${u._id}-${i}`} className="border-b border-gray-800/50 hover:bg-gray-800/20 transition-colors">
+                <tr
+                  key={`${u._id}-${i}`}
+                  style={{
+                    transition: 'opacity 0.28s ease, transform 0.28s ease',
+                    opacity: fadingRows.has(u._id) ? 0 : 1,
+                    transform: fadingRows.has(u._id) ? 'translateX(30px)' : 'translateX(0)',
+                  }}
+                  className="border-b border-gray-800/50 hover:bg-gray-800/20"
+                >
                   <td className="px-6 py-4">
                     {u._rowIndex === 0 ? u.email : <span className="text-gray-600 text-xs pl-2">↳ same user</span>}
                   </td>
-                  <td className="px-6 py-4 font-mono text-purple-400 text-xs">{u._rowIndex === 0 ? u.proxyUsername : ''}</td>
+                  <td className="px-6 py-4 font-mono text-purple-400 text-xs transition-all duration-300">
+                    {u._rowIndex === 0 ? u.proxyUsername : ''}
+                  </td>
                   <td className="px-6 py-4">
                     <div className="flex flex-col">
                       <span className="capitalize font-medium">{u.activePlan && u.activePlan !== 'none' ? u.activePlan : 'Free Trial'}</span>
-                      <span className="text-xs text-purple-400">{u.planGB ? `${u.planGB} GB` : '— GB'}</span>
+                      <span className="text-xs text-purple-400 transition-all duration-300">{u.planGB ? `${u.planGB} GB` : '— GB'}</span>
                     </div>
                   </td>
                   <td className="px-6 py-4">
@@ -362,23 +393,17 @@ function UsersTab({ users, loading, headers, exportCSV, fetchUsers, addToast }) 
                   </td>
                   <td className="px-6 py-4">
                     {u._rowIndex === 0 && (
-                      <span className={`px-2 py-1 rounded-full text-xs ${
-                        u.role === 'admin' ? 'bg-purple-600/20 text-purple-400 border border-purple-500/30' : 'bg-gray-700 text-gray-300'
-                      }`}>{u.role}</span>
+                      <span className={`px-2 py-1 rounded-full text-xs ${u.role === 'admin' ? 'bg-purple-600/20 text-purple-400 border border-purple-500/30' : 'bg-gray-700 text-gray-300'}`}>{u.role}</span>
                     )}
                   </td>
                   <td className="px-6 py-4 text-gray-400 text-xs">{u._rowIndex === 0 ? new Date(u.createdAt).toLocaleDateString() : ''}</td>
                   <td className="px-6 py-4">
                     {u._rowIndex === 0 && (
-                      <div className="flex items-center gap-2">
-                        {/* +GB */}
+                      <div className="flex items-center gap-1">
                         <button
                           onClick={() => { setAddGbUser(u._id); setGbAmount(10); setDeleteConfirmUser(null) }}
-                          className="flex items-center gap-1 text-xs text-green-400 hover:text-green-300 hover:bg-green-400/10 px-2 py-1 rounded-lg transition font-medium"
-                        >
-                          +GB
-                        </button>
-                        {/* Reset */}
+                          className="text-xs text-green-400 hover:text-green-300 hover:bg-green-400/10 px-2 py-1 rounded-lg transition font-medium"
+                        >+GB</button>
                         <button
                           onClick={() => handleReset(u._id, u.email)}
                           disabled={isLoading(u._id, 'reset')}
@@ -386,35 +411,26 @@ function UsersTab({ users, loading, headers, exportCSV, fetchUsers, addToast }) 
                         >
                           {isLoading(u._id, 'reset') ? <Spinner /> : 'Reset'}
                         </button>
-                        {/* Delete */}
                         <button
                           onClick={() => { setDeleteConfirmUser(u._id); setAddGbUser(null) }}
-                          className="flex items-center gap-1 text-xs text-red-400 hover:text-red-300 hover:bg-red-400/10 px-2 py-1 rounded-lg transition"
-                        >
-                          Delete
-                        </button>
+                          className="text-xs text-red-400 hover:text-red-300 hover:bg-red-400/10 px-2 py-1 rounded-lg transition"
+                        >Delete</button>
                       </div>
                     )}
                   </td>
                 </tr>
 
-                {/* ── Add GB inline row ── */}
+                {/* +GB inline row */}
                 {addGbUser === u._id && u._rowIndex === 0 && (
                   <tr key={`${u._id}-gb`} className="bg-green-500/5 border-b border-green-500/10">
                     <td colSpan={7} className="px-6 py-4">
                       <div className="flex items-center gap-3 flex-wrap">
                         <span className="text-sm text-gray-300">Add GB to <span className="text-white font-medium">{u.email}</span></span>
-                        <div className="flex items-center gap-2">
-                          <input
-                            type="number"
-                            value={gbAmount}
-                            onChange={e => setGbAmount(e.target.value)}
-                            min={1}
-                            autoFocus
-                            className="w-20 bg-gray-900 border border-gray-700 focus:border-green-500 text-white rounded-lg px-3 py-1.5 text-sm focus:outline-none transition"
-                          />
-                          <span className="text-gray-400 text-sm">GB</span>
-                        </div>
+                        <input
+                          type="number" value={gbAmount} onChange={e => setGbAmount(e.target.value)} min={1} autoFocus
+                          className="w-20 bg-gray-900 border border-gray-700 focus:border-green-500 text-white rounded-lg px-3 py-1.5 text-sm focus:outline-none transition"
+                        />
+                        <span className="text-gray-400 text-sm">GB</span>
                         <button
                           onClick={() => handleAddGb(u._id, u.email)}
                           disabled={isLoading(u._id, 'gb')}
@@ -422,15 +438,13 @@ function UsersTab({ users, loading, headers, exportCSV, fetchUsers, addToast }) 
                         >
                           {isLoading(u._id, 'gb') ? <><Spinner /> Adding...</> : 'Confirm'}
                         </button>
-                        <button onClick={() => setAddGbUser(null)} className="text-gray-500 hover:text-white text-xs transition px-2 py-1.5">
-                          Cancel
-                        </button>
+                        <button onClick={() => setAddGbUser(null)} className="text-gray-500 hover:text-white text-xs transition">Cancel</button>
                       </div>
                     </td>
                   </tr>
                 )}
 
-                {/* ── Delete confirm inline row ── */}
+                {/* Delete confirm inline row */}
                 {deleteConfirmUser === u._id && u._rowIndex === 0 && (
                   <tr key={`${u._id}-del`} className="bg-red-500/5 border-b border-red-500/10">
                     <td colSpan={7} className="px-6 py-4">
@@ -446,9 +460,7 @@ function UsersTab({ users, loading, headers, exportCSV, fetchUsers, addToast }) 
                         >
                           {isLoading(u._id, 'delete') ? <><Spinner /> Deleting...</> : 'Yes, Delete'}
                         </button>
-                        <button onClick={() => setDeleteConfirmUser(null)} className="text-gray-500 hover:text-white text-xs transition px-2 py-1.5">
-                          Cancel
-                        </button>
+                        <button onClick={() => setDeleteConfirmUser(null)} className="text-gray-500 hover:text-white text-xs transition">Cancel</button>
                       </div>
                     </td>
                   </tr>
