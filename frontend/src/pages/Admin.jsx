@@ -74,7 +74,7 @@ export default function Admin() {
   const handleLogout = () => { logout(); navigate('/login') }
 
   useEffect(() => {
-    if (activeTab === 'Users' || activeTab === 'Revenue' || activeTab === 'Payments' || activeTab === 'Stats') fetchUsers()
+    if (['Users','Revenue','Payments','Stats','Proxy Health'].includes(activeTab)) fetchUsers()
     if (activeTab === 'Stats') fetchStats()
   }, [activeTab])
 
@@ -205,24 +205,7 @@ export default function Admin() {
 
         {/* ── PROXY HEALTH ── */}
         {activeTab === 'Proxy Health' && (
-          <div className="space-y-6">
-            <h2 className="text-2xl font-bold mb-1">Proxy Health</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              {[
-                { label: 'Provider', value: 'Webshare' },
-                { label: 'API Status', value: 'Connected' },
-                { label: 'Uptime', value: '99.9%' },
-              ].map(item => (
-                <div key={item.label} className="bg-gray-900 border border-gray-800 rounded-2xl p-6">
-                  <div className="flex items-center gap-2 mb-2">
-                    <div className="w-2 h-2 rounded-full bg-green-400" />
-                    <span className="text-gray-400 text-sm">{item.label}</span>
-                  </div>
-                  <p className="text-xl font-bold">{item.value}</p>
-                </div>
-              ))}
-            </div>
-          </div>
+          <ProxyHealthTab users={users} headers={headers} />
         )}
 
         {/* ── LOGS ── */}
@@ -472,6 +455,161 @@ function UsersTab({ users, setUsers, loading, headers, exportCSV, fetchUsers, ad
             ))}
           </tbody>
         </table>
+      </div>
+    </div>
+  )
+}
+
+// ── PROXY HEALTH TAB ──
+function ProxyHealthTab({ users, headers }) {
+  const [providerData, setProviderData] = useState(null)
+
+  useEffect(() => {
+    const fetchProvider = async () => {
+      try {
+        const token = localStorage.getItem('token')
+        const res = await axios.get('/api/admin/provider-bandwidth', {
+          headers: { Authorization: `Bearer ${token}` }
+        })
+        setProviderData(res.data)
+      } catch {
+        setProviderData(null)
+      }
+    }
+    fetchProvider()
+  }, [])
+
+  // Calculate data sold this month by proxy type from user invoices
+  const now = new Date()
+  const allInvoices = users.flatMap(u => (u.invoices || []).map(inv => ({ ...inv, userEmail: u.email })))
+  const thisMonth = allInvoices.filter(inv => {
+    const d = new Date(inv.createdAt)
+    return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear()
+  })
+
+  // Group by proxy type — use plan name as proxy type indicator
+  const byType = {}
+  thisMonth.forEach(inv => {
+    const type = inv.plan || 'Unknown'
+    if (!byType[type]) byType[type] = { count: 0, revenue: 0 }
+    byType[type].count++
+    byType[type].revenue += inv.amount || 0
+  })
+
+  // Total bandwidth sold this month from all users
+  const totalUsedMB = users.reduce((s, u) => s + (u.usage?.bandwidthUsed || 0), 0)
+  const totalUsedGB = (totalUsedMB / 1024).toFixed(2)
+
+  // Provider bandwidth (from Webshare API if available, else placeholder)
+  const providerTotalGB = providerData?.totalGB || 1000
+  const providerUsedGB  = providerData?.usedGB  || parseFloat(totalUsedGB)
+  const providerLeftGB  = Math.max(providerTotalGB - providerUsedGB, 0).toFixed(2)
+  const providerPct     = Math.min((providerUsedGB / providerTotalGB) * 100, 100).toFixed(1)
+  const isLow           = providerPct > 80
+
+  const TYPE_COLORS = {
+    residential: 'bg-blue-500',
+    datacenter:  'bg-orange-500',
+    mobile:      'bg-green-500',
+    unknown:     'bg-purple-500',
+  }
+  const getColor = (type) => TYPE_COLORS[type.toLowerCase()] || 'bg-purple-500'
+
+  return (
+    <div className="space-y-6">
+      <h2 className="text-2xl font-bold mb-1">Proxy Health</h2>
+
+      {/* Status cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        {[
+          { label: 'Provider', value: 'Webshare' },
+          { label: 'API Status', value: 'Connected' },
+          { label: 'Uptime', value: '99.9%' },
+        ].map(item => (
+          <div key={item.label} className="bg-gray-900 border border-gray-800 rounded-2xl p-6">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-2 h-2 rounded-full bg-green-400" />
+              <span className="text-gray-400 text-sm">{item.label}</span>
+            </div>
+            <p className="text-xl font-bold">{item.value}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* Data sold this month by proxy type */}
+      <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6">
+        <h3 className="font-semibold mb-1">Data Sold This Month</h3>
+        <p className="text-gray-500 text-xs mb-5">Broken down by proxy type</p>
+
+        {Object.keys(byType).length === 0 ? (
+          <p className="text-gray-500 text-sm">No sales this month yet.</p>
+        ) : (
+          <div className="space-y-4">
+            {Object.entries(byType).map(([type, data]) => {
+              const pct = thisMonth.length > 0 ? (data.count / thisMonth.length) * 100 : 0
+              return (
+                <div key={type}>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <div className="flex items-center gap-2">
+                      <span className={`w-2.5 h-2.5 rounded-full ${getColor(type)}`} />
+                      <span className="text-sm font-medium capitalize">{type}</span>
+                    </div>
+                    <div className="flex items-center gap-4 text-sm">
+                      <span className="text-gray-400">{data.count} sale{data.count !== 1 ? 's' : ''}</span>
+                      <span className="text-green-400 font-semibold">${data.revenue.toFixed(2)}</span>
+                    </div>
+                  </div>
+                  <div className="w-full bg-gray-800 rounded-full h-2">
+                    <div
+                      className={`h-2 rounded-full transition-all duration-500 ${getColor(type)}`}
+                      style={{ width: `${pct}%` }}
+                    />
+                  </div>
+                </div>
+              )
+            })}
+            <div className="pt-2 border-t border-gray-800 flex justify-between text-sm">
+              <span className="text-gray-400">Total transactions this month</span>
+              <span className="font-bold">{thisMonth.length}</span>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* ProxyToro bandwidth left from provider */}
+      <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6">
+        <h3 className="font-semibold mb-1">ProxyToro Bandwidth — Webshare</h3>
+        <p className="text-gray-500 text-xs mb-5">How much data we have left from our provider</p>
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+          <div className="bg-gray-800 rounded-xl p-4">
+            <p className="text-gray-400 text-xs uppercase tracking-wide mb-1">Total Quota</p>
+            <p className="text-2xl font-bold">{providerTotalGB} GB</p>
+          </div>
+          <div className="bg-gray-800 rounded-xl p-4">
+            <p className="text-gray-400 text-xs uppercase tracking-wide mb-1">Used</p>
+            <p className="text-2xl font-bold text-orange-400">{providerUsedGB} GB</p>
+          </div>
+          <div className="bg-gray-800 rounded-xl p-4">
+            <p className="text-gray-400 text-xs uppercase tracking-wide mb-1">Remaining</p>
+            <p className={`text-2xl font-bold ${isLow ? 'text-red-400' : 'text-green-400'}`}>{providerLeftGB} GB</p>
+          </div>
+        </div>
+
+        {/* Big progress bar */}
+        <div className="space-y-2">
+          <div className="flex justify-between text-xs text-gray-500">
+            <span>0 GB</span>
+            <span className={isLow ? 'text-red-400 font-medium' : ''}>{providerPct}% used {isLow ? '⚠ Running low!' : ''}</span>
+            <span>{providerTotalGB} GB</span>
+          </div>
+          <div className="w-full bg-gray-800 rounded-full h-4 overflow-hidden">
+            <div
+              className={`h-4 rounded-full transition-all duration-700 ${isLow ? 'bg-gradient-to-r from-red-600 to-red-400' : 'bg-gradient-to-r from-purple-600 to-purple-400'}`}
+              style={{ width: `${providerPct}%` }}
+            />
+          </div>
+        </div>
       </div>
     </div>
   )
