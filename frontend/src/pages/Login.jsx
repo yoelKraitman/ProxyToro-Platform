@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import axios from 'axios'
 import { useAuth } from '../context/AuthContext'
@@ -9,6 +9,7 @@ export default function Login() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [serverStatus, setServerStatus] = useState('checking') // 'checking' | 'waking' | 'ready'
 
   // 2FA state
   const [requires2FA, setRequires2FA] = useState(false)
@@ -20,12 +21,33 @@ export default function Login() {
   const [searchParams] = useSearchParams()
   const justVerified = searchParams.get('verified') === 'true'
 
+  // Pre-ping the server on mount so it wakes up before the user tries to login
+  useEffect(() => {
+    let cancelled = false
+    const wake = async () => {
+      try {
+        await axios.get('/api/health', { timeout: 4000 })
+        if (!cancelled) setServerStatus('ready')
+      } catch {
+        if (!cancelled) setServerStatus('waking')
+        try {
+          await axios.get('/api/health', { timeout: 60000 })
+          if (!cancelled) setServerStatus('ready')
+        } catch {
+          if (!cancelled) setServerStatus('ready')
+        }
+      }
+    }
+    wake()
+    return () => { cancelled = true }
+  }, [])
+
   const handleSubmit = async (e) => {
     e.preventDefault()
     setError('')
     setLoading(true)
     try {
-      const res = await axios.post('/api/auth/login', { email, password }, { timeout: 15000 })
+      const res = await axios.post('/api/auth/login', { email, password }, { timeout: 60000 })
 
       if (res.data.requires2FA) {
         // Server says this user has 2FA — show the code input
@@ -37,7 +59,7 @@ export default function Login() {
       }
     } catch (err) {
       if (err.code === 'ECONNABORTED') {
-        setError('Server is waking up, please wait 30 seconds and try again.')
+        setError('Server took too long to respond. Please try again.')
       } else {
         setError(err.response?.data?.message || 'Something went wrong')
       }
@@ -73,6 +95,14 @@ export default function Login() {
         </div>
 
         <div className="bg-gray-900 border border-gray-800 rounded-2xl p-8">
+
+          {/* Server wake-up banner */}
+          {serverStatus === 'waking' && (
+            <div className="mb-5 bg-amber-500/10 border border-amber-500/30 text-amber-300 px-4 py-3 rounded-lg text-sm flex items-center gap-3">
+              <div className="w-2 h-2 bg-amber-400 rounded-full animate-pulse shrink-0" />
+              Server is starting up — ready in ~30 seconds. You can fill in your details now.
+            </div>
+          )}
 
           {/* Normal login form */}
           {!requires2FA && (

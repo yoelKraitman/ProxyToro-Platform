@@ -3,45 +3,67 @@ import { authMiddleware } from '../middleware/auth.js'
 import User from '../models/User.js'
 
 const router = express.Router()
-const WEBSHARE_API = 'https://proxy.webshare.io/api/v2'
 
-// GET /api/proxy/list?country=US&type=residential&count=10
+const GLOBEDATA_HOST = 'proxy.globedata.io'
+const GLOBEDATA_PORT = '8080'
+
+// GET /api/proxy/list?country=US&state=california&city=losangeles&type=rotating&count=5&protocol=http
 router.get('/list', authMiddleware, async (req, res) => {
   try {
-    const { country = '', count = 10 } = req.query
+    const {
+      country  = '',
+      state    = '',
+      city     = '',
+      type     = 'rotating',
+      count    = 1,
+      protocol = 'http',
+    } = req.query
 
-    // Build the URL to fetch proxies from Webshare
-    let url = `${WEBSHARE_API}/proxy/list/?mode=direct&page=1&page_size=${count}`
-    if (country) url += `&country_code__in=${country}`
+    const baseUsername = process.env.GLOBEDATA_USERNAME
+    const password     = process.env.GLOBEDATA_PASSWORD
 
-    const response = await fetch(url, {
-      headers: {
-        Authorization: `Token ${process.env.WEBSHARE_API_KEY}`
-      }
-    })
-
-    if (!response.ok) {
-      const err = await response.json()
-      return res.status(502).json({ message: 'Failed to fetch proxies', detail: err })
+    if (!baseUsername || !password) {
+      return res.status(500).json({ message: 'Proxy credentials not configured on server.' })
     }
 
-    const data = await response.json()
+    // For rotating proxies every string is identical — just return 1
+    // For sticky each one gets a unique session ID — return up to 100
+    const isSticky = type === 'sticky'
+    const num = isSticky ? Math.min(parseInt(count) || 1, 100) : 1
 
-    // Format the proxies for our frontend
-    const proxies = data.results.map(p => ({
-      host: p.proxy_address,
-      port: p.port,
-      username: p.username,
-      password: p.password,
-      country: p.country_code,
-      // Format as ip:port:user:pass — standard proxy format
-      formatted: `${p.proxy_address}:${p.port}:${p.username}:${p.password}`
-    }))
+    const proxies = []
 
-    // Track usage — increment proxies generated count
+    for (let i = 0; i < num; i++) {
+      let username = baseUsername
+
+      // Append location targeting to username
+      if (country) username += `-country-${country.toUpperCase()}`
+      if (state)   username += `-state-${state.toLowerCase().replace(/\s+/g, '')}`
+      if (city)    username += `-city-${city.toLowerCase().replace(/\s+/g, '')}`
+
+      // Sticky session gets a unique ID so each connection locks to a different IP
+      if (isSticky) {
+        const sessionId = Math.random().toString(36).substring(2, 10)
+        username += `-session-${sessionId}`
+      }
+
+      proxies.push({
+        host:      GLOBEDATA_HOST,
+        port:      GLOBEDATA_PORT,
+        username,
+        password,
+        protocol,
+        // Standard format:  host:port:user:pass
+        formatted: `${GLOBEDATA_HOST}:${GLOBEDATA_PORT}:${username}:${password}`,
+        // URL format for curl / browsers:  protocol://user:pass@host:port
+        curl:      `${protocol}://${username}:${password}@${GLOBEDATA_HOST}:${GLOBEDATA_PORT}`,
+      })
+    }
+
+    // Track usage
     await User.findByIdAndUpdate(req.user.id, {
       $inc: { 'usage.proxiesGenerated': proxies.length },
-      $set: { 'usage.lastActive': new Date() }
+      $set: { 'usage.lastActive': new Date() },
     })
 
     res.json({ count: proxies.length, proxies })

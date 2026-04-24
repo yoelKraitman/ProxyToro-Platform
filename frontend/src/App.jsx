@@ -5,6 +5,8 @@ import Login from './pages/Login'
 import Register from './pages/Register'
 import Dashboard from './pages/Dashboard'
 import Admin from './pages/Admin'
+import UseCases from './pages/UseCases'
+import UseCase from './pages/UseCase'
 
 // Protects routes — if not logged in, redirect to login
 function PrivateRoute({ children }) {
@@ -24,6 +26,8 @@ function AppRoutes() {
       <Route path="/admin" element={
         <PrivateRoute><Admin /></PrivateRoute>
       } />
+      <Route path="/use-cases" element={<UseCases />} />
+      <Route path="/use-cases/:slug" element={<UseCase />} />
       <Route path="*" element={<Navigate to="/" />} />
     </Routes>
   )

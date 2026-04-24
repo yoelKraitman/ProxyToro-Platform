@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import Footer from '../components/Footer'
 import PricingCalculator from '../components/PricingCalculator'
+import Navbar from '../components/Navbar'
 
 const features = [
   {
@@ -62,31 +63,7 @@ export default function Landing() {
   return (
     <div className="min-h-screen bg-gray-950 text-white">
 
-      {/* Navbar */}
-      <nav className="border-b border-gray-800 px-4 sm:px-6 py-4 max-w-6xl mx-auto flex items-center justify-between gap-6">
-        <h1 className="text-xl font-bold text-purple-400 shrink-0">ProxyToro</h1>
-
-        {/* Main menu */}
-        <div className="hidden lg:flex items-center gap-6 text-sm text-gray-400">
-          <a href="#use-cases" className="hover:text-white transition">Use cases</a>
-          <a href="#integration" className="hover:text-white transition">Integration</a>
-          <a href="#pricing" className="hover:text-white transition">Pricing</a>
-          <a href="#affiliate" className="hover:text-white transition">Become an affiliate</a>
-          <a href="#faq" className="hover:text-white transition">FAQ</a>
-        </div>
-
-        <div className="flex items-center gap-2 sm:gap-4 shrink-0">
-          <Link to="/login" className="text-gray-400 hover:text-white text-sm transition hidden sm:block">
-            Sign In
-          </Link>
-          <Link
-            to="/register"
-            className="bg-purple-600 hover:bg-purple-700 text-white text-sm font-semibold px-4 py-2 rounded-lg transition"
-          >
-            Get Started
-          </Link>
-        </div>
-      </nav>
+      <Navbar />
 
       {/* Hero — entrance animation on page load (not scroll-triggered) */}
       <section className="max-w-6xl mx-auto px-4 sm:px-6 py-16 sm:py-24 text-center">

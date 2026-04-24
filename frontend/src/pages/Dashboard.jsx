@@ -64,18 +64,17 @@ export default function Dashboard() {
       const token = localStorage.getItem('token')
       const params = new URLSearchParams({
         country: proxyCountry,
-        count: proxyCount,
-        type: proxyType.toLowerCase(),
+        type: proxySticky ? 'sticky' : 'rotating',
+        count: proxySticky ? proxyCount : 1,
         ...(proxyState && { state: proxyState }),
         ...(proxyCity  && { city:  proxyCity  }),
-        ...(proxyType === 'Residential' && { sticky: proxySticky }),
       })
       const res = await axios.get(`/api/proxy/list?${params}`, {
         headers: { Authorization: `Bearer ${token}` }
       })
       setProxies(res.data.proxies)
     } catch (err) {
-      setProxyError(err.response?.data?.message || 'Failed to fetch proxies')
+      setProxyError(err.response?.data?.message || 'Failed to generate proxy')
     } finally {
       setProxyLoading(false)
     }
@@ -343,54 +342,24 @@ export default function Dashboard() {
           <div className="space-y-6">
             <div>
               <h2 className="text-2xl font-bold mb-1">Proxy Generator</h2>
-              <p className="text-gray-400 text-sm">Select your options and generate proxies.</p>
+              <p className="text-gray-400 text-sm">Configure your proxy and generate your connection string.</p>
+            </div>
+
+            {/* Info banner */}
+            <div className="bg-purple-500/10 border border-purple-500/20 rounded-xl px-5 py-4 flex gap-3 text-sm">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-5 h-5 text-purple-400 shrink-0 mt-0.5">
+                <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+              </svg>
+              <div className="text-gray-300">
+                <span className="text-white font-medium">How it works: </span>
+                ProxyToro connects you through a residential proxy gateway. Every request automatically rotates to a fresh IP.
+                Use <span className="font-mono text-purple-300">Sticky Session</span> if you need to keep the same IP for a full session.
+              </div>
             </div>
 
             <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 space-y-5">
 
-              {/* Proxy Type */}
-              <div>
-                <label className="block text-sm text-gray-400 mb-2">Proxy Type</label>
-                <div className="grid grid-cols-3 gap-3">
-                  {['Residential', 'Datacenter', 'Mobile'].map(type => (
-                    <button
-                      key={type}
-                      onClick={() => setProxyType(type)}
-                      className={`rounded-lg py-3 text-sm transition border ${
-                        proxyType === type
-                          ? 'border-purple-500 text-white bg-purple-500/10'
-                          : 'border-gray-700 text-gray-300 hover:border-purple-500 hover:text-white'
-                      }`}
-                    >
-                      {type}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Credentials */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm text-gray-400 mb-2">Username</label>
-                  <input
-                    type="text"
-                    value={profile?.proxyUsername || ''}
-                    readOnly
-                    className="w-full bg-gray-800 border border-gray-700 text-gray-300 rounded-lg px-4 py-3 font-mono text-sm cursor-default focus:outline-none"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm text-gray-400 mb-2">Password</label>
-                  <input
-                    type="text"
-                    value={profile?.proxyPassword || ''}
-                    readOnly
-                    className="w-full bg-gray-800 border border-gray-700 text-gray-300 rounded-lg px-4 py-3 font-mono text-sm cursor-default focus:outline-none"
-                  />
-                </div>
-              </div>
-
-              {/* Location */}
+              {/* Country */}
               <div>
                 <label className="block text-sm text-gray-400 mb-2">Country</label>
                 <select
@@ -398,12 +367,19 @@ export default function Dashboard() {
                   onChange={e => setProxyCountry(e.target.value)}
                   className="w-full bg-gray-800 border border-gray-700 text-white rounded-lg px-4 py-3 focus:outline-none focus:border-purple-500"
                 >
+                  <option value="">Any Country (Rotating)</option>
                   <option value="US">United States</option>
                   <option value="GB">United Kingdom</option>
                   <option value="DE">Germany</option>
                   <option value="FR">France</option>
+                  <option value="CA">Canada</option>
+                  <option value="AU">Australia</option>
                   <option value="IL">Israel</option>
-                  <option value="">Any</option>
+                  <option value="JP">Japan</option>
+                  <option value="BR">Brazil</option>
+                  <option value="IN">India</option>
+                  <option value="NL">Netherlands</option>
+                  <option value="SG">Singapore</option>
                 </select>
               </div>
 
@@ -415,7 +391,7 @@ export default function Dashboard() {
                     type="text"
                     value={proxyState}
                     onChange={e => setProxyState(e.target.value)}
-                    placeholder="e.g. California"
+                    placeholder="e.g. california"
                     className="w-full bg-gray-800 border border-gray-700 text-white rounded-lg px-4 py-3 focus:outline-none focus:border-purple-500"
                   />
                 </div>
@@ -425,42 +401,44 @@ export default function Dashboard() {
                     type="text"
                     value={proxyCity}
                     onChange={e => setProxyCity(e.target.value)}
-                    placeholder="e.g. Los Angeles"
+                    placeholder="e.g. losangeles"
                     className="w-full bg-gray-800 border border-gray-700 text-white rounded-lg px-4 py-3 focus:outline-none focus:border-purple-500"
                   />
                 </div>
               </div>
 
-              {/* Amount */}
-              <div>
-                <label className="block text-sm text-gray-400 mb-2">Amount <span className="text-gray-600">(max 1000)</span></label>
-                <input
-                  type="number"
-                  value={proxyCount}
-                  onChange={e => setProxyCount(e.target.value)}
-                  min={1}
-                  max={1000}
-                  className="w-full bg-gray-800 border border-gray-700 text-white rounded-lg px-4 py-3 focus:outline-none focus:border-purple-500"
-                />
+              {/* Sticky session */}
+              <div className="flex items-center justify-between bg-gray-800 border border-gray-700 rounded-lg px-4 py-3">
+                <div>
+                  <p className="text-sm text-white font-medium">Sticky Session</p>
+                  <p className="text-xs text-gray-400 mt-0.5">Lock to the same IP for the entire session</p>
+                </div>
+                <button
+                  onClick={() => setProxySticky(v => !v)}
+                  className={`relative w-11 h-6 rounded-full transition-colors duration-200 focus:outline-none ${
+                    proxySticky ? 'bg-purple-600' : 'bg-gray-600'
+                  }`}
+                >
+                  <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200 ${
+                    proxySticky ? 'translate-x-5' : 'translate-x-0'
+                  }`} />
+                </button>
               </div>
 
-              {/* Sticky session */}
-              {proxyType === 'Residential' && (
-                <div className="flex items-center justify-between bg-gray-800 border border-gray-700 rounded-lg px-4 py-3">
-                  <div>
-                    <p className="text-sm text-white font-medium">Sticky Session</p>
-                    <p className="text-xs text-gray-400 mt-0.5">Keep the same IP for the entire session</p>
-                  </div>
-                  <button
-                    onClick={() => setProxySticky(v => !v)}
-                    className={`relative w-11 h-6 rounded-full transition-colors duration-200 focus:outline-none ${
-                      proxySticky ? 'bg-purple-600' : 'bg-gray-600'
-                    }`}
-                  >
-                    <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200 ${
-                      proxySticky ? 'translate-x-5' : 'translate-x-0'
-                    }`} />
-                  </button>
+              {/* Amount — only makes sense for sticky (each = unique session) */}
+              {proxySticky && (
+                <div>
+                  <label className="block text-sm text-gray-400 mb-2">
+                    How many sticky sessions? <span className="text-gray-600">(max 100)</span>
+                  </label>
+                  <input
+                    type="number"
+                    value={proxyCount}
+                    onChange={e => setProxyCount(e.target.value)}
+                    min={1}
+                    max={100}
+                    className="w-full bg-gray-800 border border-gray-700 text-white rounded-lg px-4 py-3 focus:outline-none focus:border-purple-500"
+                  />
                 </div>
               )}
 
@@ -473,36 +451,89 @@ export default function Dashboard() {
               <button
                 onClick={generateProxies}
                 disabled={proxyLoading}
-                className="w-full bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white font-semibold py-3 rounded-lg transition"
+                className="w-full bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white font-semibold py-3 rounded-lg transition flex items-center justify-center gap-2"
               >
-                {proxyLoading ? 'Fetching proxies...' : 'Generate Proxies'}
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4">
+                  <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+                </svg>
+                {proxyLoading ? 'Generating...' : 'Generate Proxy'}
               </button>
             </div>
 
             {/* Output */}
-            <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-sm font-medium text-gray-400">
-                  Output {proxies.length > 0 && `(${proxies.length} proxies)`}
-                </h3>
-                {proxies.length > 0 && (
+            {proxies.length > 0 && (
+              <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 space-y-4">
+                <div className="flex justify-between items-center">
+                  <h3 className="font-semibold">
+                    {proxies.length === 1 ? 'Your Proxy Connection' : `${proxies.length} Sticky Sessions`}
+                  </h3>
                   <button
                     onClick={() => copyToClipboard(proxies.map(p => p.formatted).join('\n'), 'all')}
-                    className="text-xs text-purple-400 hover:text-purple-300"
+                    className="text-xs text-purple-400 hover:text-purple-300 transition"
                   >
                     {copied === 'all' ? 'Copied!' : 'Copy All'}
                   </button>
+                </div>
+
+                {/* Connection details for single proxy */}
+                {proxies.length === 1 && (
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    {[
+                      { label: 'Host',     value: proxies[0].host },
+                      { label: 'Port',     value: proxies[0].port },
+                      { label: 'Username', value: proxies[0].username },
+                      { label: 'Password', value: proxies[0].password },
+                    ].map(({ label, value }) => (
+                      <div key={label} className="bg-gray-800 rounded-lg p-3">
+                        <p className="text-xs text-gray-500 mb-1">{label}</p>
+                        <p className="font-mono text-xs text-white break-all">{value}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Formatted strings */}
+                <div className="bg-gray-800 rounded-lg p-4 font-mono text-sm space-y-1 max-h-64 overflow-y-auto">
+                  {proxies.map((p, i) => (
+                    <div key={i} className="flex items-center justify-between gap-3 group">
+                      <span className="text-green-400 break-all leading-relaxed">{p.formatted}</span>
+                      <button
+                        onClick={() => copyToClipboard(p.formatted, `proxy-${i}`)}
+                        className="text-xs text-gray-500 hover:text-purple-400 transition shrink-0 opacity-0 group-hover:opacity-100"
+                      >
+                        {copied === `proxy-${i}` ? '✓' : 'Copy'}
+                      </button>
+                    </div>
+                  ))}
+                </div>
+
+                {/* cURL format */}
+                {proxies.length === 1 && (
+                  <div>
+                    <p className="text-xs text-gray-500 mb-2">cURL / Browser format</p>
+                    <div className="bg-gray-800 rounded-lg px-4 py-3 font-mono text-xs text-blue-400 break-all flex items-center justify-between gap-3">
+                      <span>{proxies[0].curl}</span>
+                      <button
+                        onClick={() => copyToClipboard(proxies[0].curl, 'curl')}
+                        className="text-gray-500 hover:text-purple-400 transition shrink-0"
+                      >
+                        {copied === 'curl' ? '✓' : 'Copy'}
+                      </button>
+                    </div>
+                  </div>
                 )}
               </div>
-              <div className="bg-gray-800 rounded-lg p-4 min-h-32 font-mono text-sm">
-                {proxies.length === 0
-                  ? <span className="text-gray-500">Your proxies will appear here...</span>
-                  : proxies.map((p, i) => (
-                    <div key={i} className="text-green-400 leading-relaxed">{p.formatted}</div>
-                  ))
-                }
+            )}
+
+            {/* Empty state */}
+            {proxies.length === 0 && !proxyLoading && (
+              <div className="bg-gray-900 border border-gray-800 rounded-xl p-8 text-center">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-10 h-10 text-gray-600 mx-auto mb-3">
+                  <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+                </svg>
+                <p className="text-gray-500 text-sm">Configure your options above and click <span className="text-white">Generate Proxy</span></p>
               </div>
-            </div>
+            )}
           </div>
         )}
 
