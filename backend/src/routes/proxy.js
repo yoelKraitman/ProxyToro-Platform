@@ -4,8 +4,8 @@ import User from '../models/User.js'
 
 const router = express.Router()
 
-const GLOBEDATA_HOST = 'proxy.globedata.io'
-const GLOBEDATA_PORT = '8080'
+const GLOBEDATA_HOST = process.env.PROXY_HOST || 'gate.proxytoro.com'
+const GLOBEDATA_PORT = process.env.PROXY_PORT || '8080'
 
 // GET /api/proxy/list?country=US&state=california&city=losangeles&type=rotating&count=5&protocol=http
 router.get('/list', authMiddleware, async (req, res) => {
