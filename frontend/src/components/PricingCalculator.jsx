@@ -1,80 +1,34 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 
-const PROXY_TYPES = ['Rotating Residential', 'Static Residential', 'Mobile', 'Datacenter']
-
 // Tiered per-GB pricing — more GB = cheaper rate
-const TIERS = {
-  'Rotating Residential': [
-    { min: 1,    max: 9,         perGb: 3.00 },
-    { min: 10,   max: 49,        perGb: 2.50 },
-    { min: 50,   max: 199,       perGb: 1.80 },
-    { min: 200,  max: 499,       perGb: 1.20 },
-    { min: 500,  max: 999,       perGb: 0.80 },
-    { min: 1000, max: Infinity,  perGb: 0.55 },
-  ],
-  'Static Residential': [
-    { min: 1,    max: 9,         perGb: 4.00 },
-    { min: 10,   max: 49,        perGb: 3.50 },
-    { min: 50,   max: 199,       perGb: 2.80 },
-    { min: 200,  max: 499,       perGb: 2.00 },
-    { min: 500,  max: 999,       perGb: 1.50 },
-    { min: 1000, max: Infinity,  perGb: 1.20 },
-  ],
-  'Mobile': [
-    { min: 1,    max: 9,         perGb: 8.00 },
-    { min: 10,   max: 49,        perGb: 7.00 },
-    { min: 50,   max: 199,       perGb: 5.50 },
-    { min: 200,  max: 499,       perGb: 4.00 },
-    { min: 500,  max: 999,       perGb: 3.00 },
-    { min: 1000, max: Infinity,  perGb: 2.50 },
-  ],
-  'Datacenter': [
-    { min: 1,    max: 9,         perGb: 1.00 },
-    { min: 10,   max: 49,        perGb: 0.80 },
-    { min: 50,   max: 199,       perGb: 0.60 },
-    { min: 200,  max: 499,       perGb: 0.40 },
-    { min: 500,  max: 999,       perGb: 0.30 },
-    { min: 1000, max: Infinity,  perGb: 0.25 },
-  ],
-}
+const TIERS = [
+  { min: 1,    max: 9,        perGb: 3.00 },
+  { min: 10,   max: 49,       perGb: 2.50 },
+  { min: 50,   max: 199,      perGb: 1.80 },
+  { min: 200,  max: 499,      perGb: 1.20 },
+  { min: 500,  max: 999,      perGb: 0.80 },
+  { min: 1000, max: Infinity, perGb: 0.55 },
+]
 
-function getRate(type, gb) {
-  const tier = TIERS[type].find(t => gb >= t.min && gb <= t.max)
-  return tier ? tier.perGb : TIERS[type].at(-1).perGb
+function getRate(gb) {
+  const tier = TIERS.find(t => gb >= t.min && gb <= t.max)
+  return tier ? tier.perGb : TIERS.at(-1).perGb
 }
 
 // showBuyButton: true in Dashboard (triggers onBuy callback)
 // showBuyButton: false in Landing (renders a Link to /register)
 export default function PricingCalculator({ showBuyButton = false, onBuy }) {
-  const [proxyType, setProxyType] = useState('Rotating Residential')
   const [gb, setGb] = useState(10)
 
-  const perGb    = getRate(proxyType, gb)
-  const basePerGb = TIERS[proxyType][0].perGb
-  const total    = (perGb * gb).toFixed(2)
-  const discount = Math.round((1 - perGb / basePerGb) * 100)
+  const perGb     = getRate(gb)
+  const basePerGb = TIERS[0].perGb
+  const total     = (perGb * gb).toFixed(2)
+  const discount  = Math.round((1 - perGb / basePerGb) * 100)
   const isEnterprise = gb >= 1000
 
   return (
     <div className="bg-gray-900 border border-gray-800 rounded-3xl p-6 sm:p-8">
-
-      {/* Proxy type tabs */}
-      <div className="flex flex-wrap gap-2 mb-8">
-        {PROXY_TYPES.map(type => (
-          <button
-            key={type}
-            onClick={() => setProxyType(type)}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
-              proxyType === type
-                ? 'bg-purple-600 text-white'
-                : 'bg-gray-800 text-gray-400 hover:text-white'
-            }`}
-          >
-            {type}
-          </button>
-        ))}
-      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
 
@@ -101,7 +55,7 @@ export default function PricingCalculator({ showBuyButton = false, onBuy }) {
 
           {/* Tier badges — highlights current active tier */}
           <div className="flex flex-wrap gap-2">
-            {TIERS[proxyType].map((tier, i) => {
+            {TIERS.map((tier, i) => {
               const active = gb >= tier.min && (tier.max === Infinity ? true : gb <= tier.max)
               return (
                 <span
@@ -124,7 +78,7 @@ export default function PricingCalculator({ showBuyButton = false, onBuy }) {
         <div className="bg-gray-800 rounded-2xl p-6 space-y-4">
           <div className="flex justify-between items-center">
             <span className="text-gray-400 text-sm">Proxy type</span>
-            <span className="text-white text-sm font-medium">{proxyType}</span>
+            <span className="text-white text-sm font-medium">Rotating Residential</span>
           </div>
           <div className="flex justify-between items-center">
             <span className="text-gray-400 text-sm">Bandwidth</span>
@@ -162,7 +116,7 @@ export default function PricingCalculator({ showBuyButton = false, onBuy }) {
             </a>
           ) : showBuyButton ? (
             <button
-              onClick={() => onBuy?.({ type: proxyType, gb: Number(gb), total: Number(total) })}
+              onClick={() => onBuy?.({ type: 'Rotating Residential', gb: Number(gb), total: Number(total) })}
               className="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-3 rounded-xl transition"
             >
               Purchase Now

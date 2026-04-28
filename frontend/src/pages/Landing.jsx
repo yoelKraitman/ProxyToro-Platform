@@ -8,12 +8,12 @@ const features = [
   {
     icon: '🌍',
     title: 'Global Locations',
-    desc: 'Access proxies from 50+ countries including US, UK, Germany, Israel and more.'
+    desc: 'Access proxies from 78+ countries including US, UK, Germany, Canada and more.'
   },
   {
     icon: '⚡',
     title: 'Lightning Fast',
-    desc: 'High-speed residential and datacenter proxies with 99.9% uptime guarantee.'
+    desc: 'High-speed residential proxies with 99.9% uptime guarantee.'
   },
   {
     icon: '🔒',
@@ -29,11 +29,6 @@ const features = [
     icon: '💳',
     title: 'Crypto Payments',
     desc: 'Pay privately with Bitcoin, Ethereum, USDT and 100+ other cryptocurrencies.'
-  },
-  {
-    icon: '🛡️',
-    title: 'White-Label Ready',
-    desc: 'All proxies are fully branded under ProxyToro. No third-party exposure.'
   },
 ]
 
@@ -117,7 +112,7 @@ export default function Landing() {
           {features.map((f, i) => (
             <div
               key={f.title}
-              className={`reveal ${delayClass[i]} bg-gray-900 border border-gray-800 rounded-2xl p-6 hover:border-purple-500/50 transition`}
+              className={`reveal ${delayClass[i]} bg-gray-900 border border-gray-800 rounded-2xl p-6 hover:border-purple-500/50 transition ${i === 4 ? 'sm:col-start-1 lg:col-start-2' : ''}`}
             >
               <div className="text-3xl mb-4">{f.icon}</div>
               <h3 className="text-lg font-semibold mb-2">{f.title}</h3>
