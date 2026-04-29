@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useRef, useState, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import { USE_CASE_CATEGORIES, ICONS, ITEM_ICON_MAP } from '../data/useCases'
 
@@ -12,7 +12,9 @@ function Icon({ name, className = 'w-4 h-4' }) {
 
 export default function Navbar() {
   const [showUseCases, setShowUseCases] = useState(false)
+  const [showProxyTypes, setShowProxyTypes] = useState(false)
   const timerRef = useRef(null)
+  const proxyTimerRef = useRef(null)
 
   const openMenu = () => {
     clearTimeout(timerRef.current)
@@ -20,6 +22,14 @@ export default function Navbar() {
   }
   const closeMenu = () => {
     timerRef.current = setTimeout(() => setShowUseCases(false), 150)
+  }
+
+  const openProxyTypes = () => {
+    clearTimeout(proxyTimerRef.current)
+    setShowProxyTypes(true)
+  }
+  const closeProxyTypes = () => {
+    proxyTimerRef.current = setTimeout(() => setShowProxyTypes(false), 150)
   }
 
   return (
@@ -57,6 +67,47 @@ export default function Navbar() {
             {showUseCases && (
               <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-purple-500" style={{ transform: 'translateY(calc(100% + 16px))' }} />
             )}
+          </div>
+
+          {/* Proxy types dropdown */}
+          <div className="relative" onMouseEnter={openProxyTypes} onMouseLeave={closeProxyTypes}>
+            <button className={`flex items-center gap-1 transition hover:text-white ${showProxyTypes ? 'text-white' : ''}`}>
+              Proxy types
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor"
+                className={`w-3 h-3 transition-transform duration-200 ${showProxyTypes ? 'rotate-180' : ''}`}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+              </svg>
+            </button>
+
+            {/* Dropdown */}
+            <div
+              className="absolute top-full left-1/2 -translate-x-1/2 mt-3 w-44 bg-gray-900 border border-gray-800 rounded-xl shadow-2xl overflow-hidden"
+              style={{
+                opacity: showProxyTypes ? 1 : 0,
+                transform: showProxyTypes ? 'translateX(-50%) translateY(0)' : 'translateX(-50%) translateY(-6px)',
+                pointerEvents: showProxyTypes ? 'auto' : 'none',
+                transition: 'opacity 200ms ease-out, transform 200ms ease-out',
+              }}
+            >
+              {[
+                { label: 'Residential', desc: 'Real home IPs' },
+                { label: 'Data Center', desc: 'Fast server IPs' },
+                { label: 'ISP', desc: 'ISP-grade proxies' },
+              ].map((item, i) => (
+                <Link
+                  key={item.label}
+                  to="/register"
+                  onClick={() => setShowProxyTypes(false)}
+                  className="flex items-center gap-3 px-4 py-3 hover:bg-gray-800 transition group border-b border-gray-800 last:border-0"
+                >
+                  <div className="w-2 h-2 rounded-full bg-purple-500 shrink-0" />
+                  <div>
+                    <p className="text-sm text-white font-medium group-hover:text-purple-400 transition">{item.label}</p>
+                    <p className="text-xs text-gray-500">{item.desc}</p>
+                  </div>
+                </Link>
+              ))}
+            </div>
           </div>
 
           <a href="/#integration" className="hover:text-white transition">Integration</a>
