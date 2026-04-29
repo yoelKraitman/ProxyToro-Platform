@@ -62,4 +62,14 @@ router.post('/reset-credentials', authMiddleware, async (req, res) => {
   }
 })
 
+// DELETE /api/user/me — delete own account
+router.delete('/me', authMiddleware, async (req, res) => {
+  try {
+    await User.findByIdAndDelete(req.user.id)
+    res.json({ message: 'Account deleted' })
+  } catch (err) {
+    res.status(500).json({ message: err.message })
+  }
+})
+
 export default router

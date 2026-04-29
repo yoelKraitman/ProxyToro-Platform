@@ -8,10 +8,16 @@ import Admin from './pages/Admin'
 import UseCases from './pages/UseCases'
 import UseCase from './pages/UseCase'
 
-// Protects routes — if not logged in, redirect to login
 function PrivateRoute({ children }) {
   const { user } = useAuth()
   return user ? children : <Navigate to="/login" />
+}
+
+function AdminRoute({ children }) {
+  const { user } = useAuth()
+  if (!user) return <Navigate to="/login" />
+  if (user.role !== 'admin') return <Navigate to="/dashboard" />
+  return children
 }
 
 function AppRoutes() {
@@ -24,7 +30,7 @@ function AppRoutes() {
         <PrivateRoute><Dashboard /></PrivateRoute>
       } />
       <Route path="/admin" element={
-        <PrivateRoute><Admin /></PrivateRoute>
+        <AdminRoute><Admin /></AdminRoute>
       } />
       <Route path="/use-cases" element={<UseCases />} />
       <Route path="/use-cases/:slug" element={<UseCase />} />

@@ -735,12 +735,15 @@ export default function Dashboard() {
 }
 
 function AccountTab({ user, profile }) {
+  const { logout } = useAuth()
+  const navigate = useNavigate()
   const [currentPassword, setCurrentPassword] = useState('')
   const [newPassword, setNewPassword] = useState('')
   const [pwMsg, setPwMsg] = useState('')
   const [pwLoading, setPwLoading] = useState(false)
   const [credMsg, setCredMsg] = useState('')
   const [credLoading, setCredLoading] = useState(false)
+  const [deleteLoading, setDeleteLoading] = useState(false)
 
   const changePassword = async () => {
     setPwLoading(true)
@@ -757,6 +760,21 @@ function AccountTab({ user, profile }) {
       setPwMsg({ type: 'error', text: err.response?.data?.message || 'Failed to update password' })
     } finally {
       setPwLoading(false)
+    }
+  }
+
+  const deleteAccount = async () => {
+    if (!window.confirm('Are you sure you want to delete your account? This cannot be undone.')) return
+    setDeleteLoading(true)
+    try {
+      const token = localStorage.getItem('token')
+      await axios.delete('/api/user/me', { headers: { Authorization: `Bearer ${token}` } })
+      logout()
+      navigate('/login')
+    } catch (err) {
+      alert('Failed to delete account. Please try again.')
+    } finally {
+      setDeleteLoading(false)
     }
   }
 
@@ -856,8 +874,12 @@ function AccountTab({ user, profile }) {
       <div className="bg-gray-900 border border-red-900/30 rounded-xl p-6">
         <h3 className="text-lg font-semibold text-red-400 mb-2">Danger Zone</h3>
         <p className="text-gray-400 text-sm mb-4">Once you delete your account, there is no going back.</p>
-        <button className="border border-red-500/50 text-red-400 hover:bg-red-500/10 px-6 py-2 rounded-lg text-sm transition">
-          Delete Account
+        <button
+          onClick={deleteAccount}
+          disabled={deleteLoading}
+          className="border border-red-500/50 text-red-400 hover:bg-red-500/10 disabled:opacity-50 px-6 py-2 rounded-lg text-sm transition"
+        >
+          {deleteLoading ? 'Deleting...' : 'Delete Account'}
         </button>
       </div>
     </div>
