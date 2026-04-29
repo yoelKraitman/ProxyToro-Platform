@@ -26,7 +26,10 @@ export default function Navbar() {
     <div className="relative border-b border-gray-800 bg-gray-950 z-40">
       <nav className="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between gap-6">
         {/* Logo */}
-        <Link to="/" className="text-xl font-bold text-purple-400 shrink-0">ProxyToro</Link>
+        <Link to="/" className="flex items-center gap-2 shrink-0">
+          <img src="/logo.svg" alt="ProxyToro" className="h-8 w-8 rounded-md" />
+          <span className="text-xl font-bold text-purple-400">ProxyToro</span>
+        </Link>
 
         {/* Desktop nav links */}
         <div className="hidden lg:flex items-center gap-6 text-sm text-gray-400">
