@@ -283,9 +283,17 @@ export default function Dashboard() {
                     <span className="text-gray-400">Renewal Date</span>
                     <span className="font-medium">—</span>
                   </div>
-                  <div className="pt-2 flex justify-between text-xs text-gray-500">
-                    <span>Bandwidth used</span>
-                    <span>{bandwidthGB} GB</span>
+                  <div className="pt-2">
+                    <div className="flex justify-between text-xs text-gray-500 mb-1.5">
+                      <span>Usage</span>
+                      <span>{bandwidthGB} GB</span>
+                    </div>
+                    <div className="w-full bg-gray-800 rounded-full h-2">
+                      <div
+                        className="bg-purple-500 h-2 rounded-full transition-all"
+                        style={{ width: `${Math.min((bandwidthUsed / (50 * 1024)) * 100, 100).toFixed(1)}%` }}
+                      />
+                    </div>
                   </div>
                 </div>
                 <button
@@ -298,25 +306,32 @@ export default function Dashboard() {
 
             </div>
 
-            {/* Account Info */}
+            {/* Credentials */}
             <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
-              <h3 className="font-semibold mb-4 text-purple-400">Account Info</h3>
+              <h3 className="font-semibold mb-4 text-purple-400">Your Proxy Credentials</h3>
               <div className="space-y-3">
                 {[
+                  { label: 'Proxy Username', value: profile?.proxyUsername || user?.proxyUsername },
+                  { label: 'Proxy Password', value: profile?.proxyPassword },
                   { label: 'Email', value: user?.email },
                   { label: 'Role', value: user?.role },
-                  { label: 'Gateway Host', value: 'gate.proxytoro.com' },
-                  { label: 'Gateway Port', value: '8080' },
                 ].map(({ label, value }) => (
                   <div key={label} className="flex justify-between items-center bg-gray-800 rounded-lg px-4 py-3">
                     <span className="text-gray-400 text-sm">{label}</span>
-                    <span className="font-mono text-white text-sm">{value}</span>
+                    <div className="flex items-center gap-3">
+                      <span className="font-mono text-white text-sm">{value}</span>
+                      {(label === 'Proxy Username' || label === 'Proxy Password') && (
+                        <button
+                          onClick={() => copyToClipboard(value, label)}
+                          className="text-xs text-purple-400 hover:text-purple-300 transition"
+                        >
+                          {copied === label ? 'Copied!' : 'Copy'}
+                        </button>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>
-              <p className="text-xs text-gray-500 mt-4">
-                Use the <button onClick={() => setActiveTab('Proxy Generator')} className="text-purple-400 hover:underline">Proxy Generator</button> tab to get your full connection string.
-              </p>
             </div>
           </div>
         )}
@@ -602,16 +617,18 @@ export default function Dashboard() {
               <h3 className="font-semibold mb-4">Bandwidth Overview</h3>
               <div className="space-y-3">
                 <div className="flex justify-between text-sm">
-                  <span className="text-gray-400">Total used</span>
-                  <span className="font-semibold">{bandwidthGB} GB</span>
+                  <span className="text-gray-400">Used</span>
+                  <span>{bandwidthGB} GB</span>
                 </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-400">Proxies generated</span>
-                  <span className="font-semibold">{profile?.usage?.proxiesGenerated || 0}</span>
+                <div className="w-full bg-gray-800 rounded-full h-3">
+                  <div
+                    className="bg-gradient-to-r from-purple-600 to-purple-400 h-3 rounded-full transition-all"
+                    style={{ width: `${Math.min((bandwidthUsed / (50 * 1024)) * 100, 100).toFixed(1)}%` }}
+                  />
                 </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-400">Billing model</span>
-                  <span className="text-purple-400 font-semibold">Pay per GB</span>
+                <div className="flex justify-between text-xs text-gray-500">
+                  <span>0 GB</span>
+                  <span>50 GB (plan limit)</span>
                 </div>
               </div>
             </div>
