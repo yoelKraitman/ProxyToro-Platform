@@ -17,10 +17,10 @@ const TABS = [
 
 const NAV_LINKS = [
   { label: 'Home', href: '/' },
-  { label: 'Contact Sales', href: '#' },
+  { label: 'Contact Sales', href: 'mailto:sales@proxytoro.com' },
   { label: 'Pricing', href: '/#pricing' },
   { label: 'Integrations', href: '#' },
-  { label: 'Use Cases', href: '#' },
+  { label: 'Use Cases', href: '/use-cases' },
   { label: 'Referral Program', href: '#' },
 ]
 
@@ -109,7 +109,11 @@ export default function Dashboard() {
 
   const bandwidthUsed = profile?.usage?.bandwidthUsed || 0
   const bandwidthGB = (bandwidthUsed / 1024).toFixed(2)
-  const planName = profile?.activePlan === 'none' ? 'Free Trial' : (profile?.activePlan || 'Free Trial')
+  const bandwidthPurchased = profile?.bandwidthPurchased || 0
+  const planName = bandwidthPurchased > 0 ? `${bandwidthPurchased} GB` : 'Free Trial'
+  const bandwidthBarPct = bandwidthPurchased > 0
+    ? Math.min((bandwidthUsed / (bandwidthPurchased * 1024)) * 100, 100).toFixed(1)
+    : 0
 
   return (
     <div className="min-h-screen bg-gray-950 text-white flex flex-col">
@@ -303,12 +307,12 @@ export default function Dashboard() {
                   <div className="pt-2">
                     <div className="flex justify-between text-xs text-gray-500 mb-1.5">
                       <span>Usage</span>
-                      <span>{bandwidthGB} GB</span>
+                      <span>{bandwidthGB} / {bandwidthPurchased} GB</span>
                     </div>
                     <div className="w-full bg-gray-800 rounded-full h-2">
                       <div
                         className="bg-purple-500 h-2 rounded-full transition-all"
-                        style={{ width: `${Math.min((bandwidthUsed / (50 * 1024)) * 100, 100).toFixed(1)}%` }}
+                        style={{ width: `${bandwidthBarPct}%` }}
                       />
                     </div>
                   </div>
@@ -644,12 +648,12 @@ export default function Dashboard() {
                 <div className="w-full bg-gray-800 rounded-full h-3">
                   <div
                     className="bg-gradient-to-r from-purple-600 to-purple-400 h-3 rounded-full transition-all"
-                    style={{ width: `${Math.min((bandwidthUsed / (50 * 1024)) * 100, 100).toFixed(1)}%` }}
+                    style={{ width: `${bandwidthBarPct}%` }}
                   />
                 </div>
                 <div className="flex justify-between text-xs text-gray-500">
                   <span>0 GB</span>
-                  <span>50 GB (plan limit)</span>
+                  <span>{bandwidthPurchased > 0 ? `${bandwidthPurchased} GB purchased` : 'No bandwidth purchased yet'}</span>
                 </div>
               </div>
             </div>
