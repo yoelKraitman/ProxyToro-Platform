@@ -27,7 +27,7 @@ export default function Navbar() {
       <nav className="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between gap-6">
         {/* Logo */}
         <Link to="/" className="flex items-center gap-2 shrink-0">
-          <img src="/logo.svg" alt="ProxyToro" className="h-10 w-10 mix-blend-screen" />
+          <img src="/logo.svg" alt="ProxyToro" className="h-14 w-auto mix-blend-screen" />
           <span className="text-xl font-bold text-purple-400">ProxyToro</span>
         </Link>
 
