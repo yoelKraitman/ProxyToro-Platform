@@ -46,6 +46,8 @@ export default function Dashboard() {
     fetchProfile()
   }, [])
 
+  const [paymentLoading, setPaymentLoading] = useState(false)
+  const [paymentError, setPaymentError] = useState('')
   const [proxyCountry, setProxyCountry] = useState('US')
   const [proxyState, setProxyState] = useState('')
   const [proxyCity, setProxyCity] = useState('')
@@ -76,6 +78,21 @@ export default function Dashboard() {
       setProxyError(err.response?.data?.message || 'Failed to generate proxy')
     } finally {
       setProxyLoading(false)
+    }
+  }
+
+  const handleBuy = async ({ gb, total }) => {
+    setPaymentLoading(true)
+    setPaymentError('')
+    try {
+      const token = localStorage.getItem('token')
+      const res = await axios.post('/api/payment/create', { gb, total }, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      window.location.href = res.data.paymentUrl
+    } catch (err) {
+      setPaymentError(err.response?.data?.message || 'Failed to create payment. Please try again.')
+      setPaymentLoading(false)
     }
   }
 
@@ -544,11 +561,15 @@ export default function Dashboard() {
               <p className="text-gray-400 text-sm">Pick your proxy type and bandwidth — price updates instantly.</p>
             </div>
 
+            {paymentError && (
+              <div className="bg-red-500/10 border border-red-500/30 text-red-400 px-4 py-3 rounded-lg text-sm">
+                {paymentError}
+              </div>
+            )}
             <PricingCalculator
               showBuyButton
-              onBuy={({ type, gb, total }) => {
-                alert(`Redirecting to payment for ${gb} GB of ${type} proxies — $${total}\n\nPayment integration coming soon.`)
-              }}
+              onBuy={handleBuy}
+              paymentLoading={paymentLoading}
             />
 
             {/* Invoice history */}

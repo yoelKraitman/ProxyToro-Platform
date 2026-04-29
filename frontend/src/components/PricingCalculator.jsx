@@ -18,7 +18,7 @@ function getRate(gb) {
 
 // showBuyButton: true in Dashboard (triggers onBuy callback)
 // showBuyButton: false in Landing (renders a Link to /register)
-export default function PricingCalculator({ showBuyButton = false, onBuy }) {
+export default function PricingCalculator({ showBuyButton = false, onBuy, paymentLoading = false }) {
   const [gb, setGb] = useState(10)
 
   const perGb     = getRate(gb)
@@ -117,9 +117,10 @@ export default function PricingCalculator({ showBuyButton = false, onBuy }) {
           ) : showBuyButton ? (
             <button
               onClick={() => onBuy?.({ type: 'Rotating Residential', gb: Number(gb), total: Number(total) })}
-              className="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-3 rounded-xl transition"
+              disabled={paymentLoading}
+              className="w-full bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white font-semibold py-3 rounded-xl transition"
             >
-              Purchase Now
+              {paymentLoading ? 'Redirecting to payment...' : 'Purchase Now'}
             </button>
           ) : (
             <Link

@@ -4,22 +4,14 @@ import User from '../models/User.js'
 
 const router = express.Router()
 
-const PLANS = {
-  starter: { name: 'Starter', price: 9, bandwidth: '10GB', proxies: 100 },
-  pro:     { name: 'Pro',     price: 29, bandwidth: '50GB', proxies: 500 },
-  business:{ name: 'Business',price: 79, bandwidth: '200GB', proxies: -1 },
-}
-
-// POST /api/payment/create — user clicks "Get Started" on a plan
+// POST /api/payment/create — user buys GB of bandwidth
 router.post('/create', authMiddleware, async (req, res) => {
   try {
-    const { plan } = req.body
-    const planData = PLANS[plan]
+    const { gb, total } = req.body
 
-    if (!planData)
-      return res.status(400).json({ message: 'Invalid plan' })
+    if (!gb || !total || gb < 1)
+      return res.status(400).json({ message: 'Invalid purchase amount' })
 
-    // Create a payment with NOWPayments
     const response = await fetch('https://api.nowpayments.io/v1/payment', {
       method: 'POST',
       headers: {
@@ -27,11 +19,11 @@ router.post('/create', authMiddleware, async (req, res) => {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        price_amount: planData.price,
+        price_amount: total,
         price_currency: 'usd',
         pay_currency: 'usdtsol',
-        order_id: `${req.user.id}_${plan}_${Date.now()}`,
-        order_description: `ProxyToro ${planData.name} Plan`,
+        order_id: `${req.user.id}_${gb}_${Date.now()}`,
+        order_description: `ProxyToro — ${gb} GB residential proxy bandwidth`,
         ipn_callback_url: `${process.env.BACKEND_URL}/api/payment/webhook`,
       })
     })
@@ -54,23 +46,23 @@ router.post('/create', authMiddleware, async (req, res) => {
   }
 })
 
-// POST /api/payment/webhook — NOWPayments notifies us when payment is confirmed
+// POST /api/payment/webhook — NOWPayments calls this when payment is confirmed
 router.post('/webhook', express.json(), async (req, res) => {
   try {
     const { payment_status, order_id } = req.body
 
     if (payment_status === 'confirmed' || payment_status === 'finished') {
-      const [userId, plan] = order_id.split('_')
-      const planData = PLANS[plan]
+      const parts = order_id.split('_')
+      const userId = parts[0]
+      const gb = parseFloat(parts[1])
 
-      if (userId && planData) {
+      if (userId && gb) {
         await User.findByIdAndUpdate(userId, {
-          activePlan: plan,
-          planActivatedAt: new Date(),
+          $inc: { bandwidthPurchased: gb },
           $push: {
             invoices: {
-              plan: planData.name,
-              amount: planData.price,
+              plan: `${gb} GB`,
+              amount: req.body.price_amount,
               currency: 'USDT',
               paymentId: req.body.payment_id,
               status: 'paid',
