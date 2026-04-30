@@ -229,6 +229,7 @@ export default function Admin() {
 
 // ── USERS TAB ──
 function UsersTab({ users, setUsers, loading, headers, exportCSV, fetchUsers, addToast }) {
+  const [search, setSearch]                 = useState('')
   const [addGbUser, setAddGbUser]           = useState(null)
   const [gbAmount, setGbAmount]             = useState(10)
   const [deleteConfirmUser, setDeleteConfirmUser] = useState(null)
@@ -301,7 +302,11 @@ function UsersTab({ users, setUsers, loading, headers, exportCSV, fetchUsers, ad
     }
   }
 
-  const rows = users.flatMap(u => {
+  const filteredUsers = search.trim()
+    ? users.filter(u => u.email.toLowerCase().includes(search.toLowerCase()))
+    : users
+
+  const rows = filteredUsers.flatMap(u => {
     const types = u.proxyTypes?.length ? u.proxyTypes : [null]
     return types.map((type, i) => ({ ...u, _rowType: type, _rowIndex: i }))
   })
@@ -322,6 +327,28 @@ function UsersTab({ users, setUsers, loading, headers, exportCSV, fetchUsers, ad
             Export CSV
           </button>
         </div>
+      </div>
+
+      {/* Search bar */}
+      <div className="flex gap-3">
+        <div className="relative flex-1">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none">
+            <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+          </svg>
+          <input
+            type="text"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder="Search by email or name..."
+            className="w-full bg-gray-900 border border-gray-800 text-white rounded-xl pl-11 pr-4 py-3 focus:outline-none focus:border-purple-500 transition text-sm"
+          />
+        </div>
+        <button
+          onClick={() => setSearch('')}
+          className="bg-purple-600 hover:bg-purple-700 text-white text-sm font-semibold px-6 py-3 rounded-xl transition"
+        >
+          {search ? 'Clear' : 'Search'}
+        </button>
       </div>
 
       <div className="bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden overflow-x-auto">
