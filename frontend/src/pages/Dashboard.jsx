@@ -258,6 +258,59 @@ export default function Dashboard() {
 
             </div>
 
+            {/* Packages */}
+            {profile?.packages?.length > 0 && (
+              <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
+                <div className="flex items-center justify-between mb-5">
+                  <h3 className="font-semibold text-lg">Packages</h3>
+                  <button
+                    onClick={() => setActiveTab('Payment History')}
+                    className="text-sm text-purple-400 hover:text-purple-300 transition"
+                  >
+                    + Add Package
+                  </button>
+                </div>
+                <div className="space-y-4">
+                  {profile.packages.map((pkg, i) => {
+                    const usedGB = (pkg.usedMB / 1024).toFixed(2)
+                    const remainingGB = Math.max(pkg.gb - usedGB, 0).toFixed(2)
+                    const pct = pkg.gb > 0 ? Math.min((pkg.usedMB / (pkg.gb * 1024)) * 100, 100).toFixed(1) : 0
+                    const isExpired = pkg.expiresAt && new Date(pkg.expiresAt) < new Date()
+                    const isActive = pkg.active && !isExpired
+                    return (
+                      <div key={i} className={`border rounded-xl p-5 ${isActive ? 'border-gray-700' : 'border-red-900/40'}`}>
+                        <div className="flex items-center justify-between mb-3">
+                          <p className="font-bold text-white">{pkg.name || `${pkg.gb}GB Package`}</p>
+                          <div className={`w-10 h-6 rounded-full flex items-center justify-center ${isActive ? 'bg-green-500/20' : 'bg-red-500/20'}`}>
+                            <div className={`w-4 h-4 rounded-full ${isActive ? 'bg-green-400' : 'bg-red-400'}`} />
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-x-8 gap-y-1 text-sm mb-3">
+                          <span className="text-gray-400">Total: <span className="text-white font-semibold">{pkg.gb}.00 GB</span></span>
+                          <span className="text-gray-400">Used: <span className="text-white font-semibold">{usedGB} GB</span></span>
+                          <span className="text-gray-400">Remaining: <span className="text-green-400 font-semibold">{remainingGB} GB</span></span>
+                          {pkg.expiresAt && (
+                            <span className="text-gray-400 flex items-center gap-1">
+                              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3.5 h-3.5 shrink-0">
+                                <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+                              </svg>
+                              {new Date(pkg.expiresAt).toLocaleDateString()}
+                            </span>
+                          )}
+                        </div>
+                        <div className="w-full bg-gray-800 rounded-full h-2">
+                          <div
+                            className="bg-blue-500 h-2 rounded-full transition-all"
+                            style={{ width: `${pct}%` }}
+                          />
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
+
             {/* Recent Activity + Subscription Status */}
             <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
 

@@ -76,9 +76,19 @@ router.post('/add-package', authMiddleware, adminOnly, async (req, res) => {
     const expiry = new Date()
     expiry.setDate(expiry.getDate() + (Number(expirationDays) || 365))
 
+    const gbNum = Number(gb)
     await User.findByIdAndUpdate(user._id, {
-      $inc: { bandwidthPurchased: Number(gb) },
+      $inc: { bandwidthPurchased: gbNum },
       bandwidthExpiry: expiry,
+      $push: {
+        packages: {
+          name: `${gbNum}GB Package`,
+          gb: gbNum,
+          usedMB: 0,
+          expiresAt: expiry,
+          active: true,
+        }
+      }
     })
 
     res.json({ message: `Added ${gb} GB to ${email}, expires ${expiry.toLocaleDateString()}` })
