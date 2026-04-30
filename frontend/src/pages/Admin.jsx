@@ -230,11 +230,32 @@ export default function Admin() {
 // ── USERS TAB ──
 function UsersTab({ users, setUsers, loading, headers, exportCSV, fetchUsers, addToast }) {
   const [search, setSearch]                 = useState('')
+  const [showPackageModal, setShowPackageModal] = useState(false)
+  const [pkgEmail, setPkgEmail]             = useState('')
+  const [pkgGb, setPkgGb]                   = useState(10)
+  const [pkgDays, setPkgDays]               = useState(365)
+  const [pkgLoading, setPkgLoading]         = useState(false)
   const [addGbUser, setAddGbUser]           = useState(null)
   const [gbAmount, setGbAmount]             = useState(10)
   const [deleteConfirmUser, setDeleteConfirmUser] = useState(null)
   const [fadingRows, setFadingRows]         = useState(new Set())
   const [loadingAction, setLoadingAction]   = useState({})
+
+  const handleAddPackage = async () => {
+    if (!pkgEmail) { addToast('Email is required', 'error'); return }
+    setPkgLoading(true)
+    try {
+      await axios.post('/api/admin/add-package', { email: pkgEmail, gb: pkgGb, expirationDays: pkgDays }, { headers })
+      addToast(`Added ${pkgGb} GB to ${pkgEmail}`)
+      setShowPackageModal(false)
+      setPkgEmail(''); setPkgGb(10); setPkgDays(365)
+      fetchUsers()
+    } catch (err) {
+      addToast(err.response?.data?.message || 'Failed to add package', 'error')
+    } finally {
+      setPkgLoading(false)
+    }
+  }
 
   const setActionLoading = (userId, action, val) =>
     setLoadingAction(prev => ({ ...prev, [`${userId}_${action}`]: val }))
@@ -323,11 +344,75 @@ function UsersTab({ users, setUsers, loading, headers, exportCSV, fetchUsers, ad
             <p className="text-2xl font-bold text-purple-400">{users.length}</p>
             <p className="text-xs text-gray-400">Total Users</p>
           </div>
+          <button onClick={() => setShowPackageModal(true)} className="bg-green-600 hover:bg-green-700 text-white text-sm font-semibold px-4 py-2 rounded-lg transition">
+            + Add Package
+          </button>
           <button onClick={exportCSV} className="bg-purple-600 hover:bg-purple-700 text-white text-sm font-semibold px-4 py-2 rounded-lg transition">
             Export CSV
           </button>
         </div>
       </div>
+
+      {/* Add Package Modal */}
+      {showPackageModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center px-4">
+          <div className="bg-gray-900 border border-gray-800 rounded-2xl p-8 w-full max-w-md shadow-2xl">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-bold">Add Package to User</h3>
+              <button onClick={() => setShowPackageModal(false)} className="text-gray-500 hover:text-white transition text-2xl leading-none">×</button>
+            </div>
+            <div className="space-y-5">
+              <div>
+                <label className="block text-sm text-gray-400 mb-2">User Email</label>
+                <input
+                  type="email"
+                  value={pkgEmail}
+                  onChange={e => setPkgEmail(e.target.value)}
+                  placeholder="user@example.com"
+                  autoFocus
+                  className="w-full bg-gray-800 border border-gray-700 focus:border-purple-500 text-white rounded-xl px-4 py-3 focus:outline-none transition"
+                />
+              </div>
+              <div>
+                <label className="block text-sm text-gray-400 mb-2">GB Amount</label>
+                <input
+                  type="number"
+                  value={pkgGb}
+                  onChange={e => setPkgGb(e.target.value)}
+                  min={1}
+                  className="w-full bg-gray-800 border border-gray-700 focus:border-purple-500 text-white rounded-xl px-4 py-3 focus:outline-none transition"
+                />
+              </div>
+              <div>
+                <label className="block text-sm text-gray-400 mb-2">Expiration Days</label>
+                <input
+                  type="number"
+                  value={pkgDays}
+                  onChange={e => setPkgDays(e.target.value)}
+                  min={1}
+                  className="w-full bg-gray-800 border border-gray-700 focus:border-purple-500 text-white rounded-xl px-4 py-3 focus:outline-none transition"
+                />
+                <p className="text-xs text-gray-500 mt-1.5">Number of days until package expires</p>
+              </div>
+              <div className="flex gap-3 pt-2">
+                <button
+                  onClick={() => setShowPackageModal(false)}
+                  className="flex-1 bg-gray-800 hover:bg-gray-700 text-white font-semibold py-3 rounded-xl transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleAddPackage}
+                  disabled={pkgLoading}
+                  className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-semibold py-3 rounded-xl transition flex items-center justify-center gap-2"
+                >
+                  {pkgLoading ? <><Spinner /> Adding...</> : 'Add Package'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Search bar */}
       <div className="flex gap-3">

@@ -64,6 +64,45 @@ router.delete('/users/:id', authMiddleware, adminOnly, async (req, res) => {
   }
 })
 
+// POST /api/admin/add-package — add GB + expiry to a user by email
+router.post('/add-package', authMiddleware, adminOnly, async (req, res) => {
+  try {
+    const { email, gb, expirationDays } = req.body
+    if (!email || !gb) return res.status(400).json({ message: 'Email and GB are required' })
+
+    const user = await User.findOne({ email: email.toLowerCase().trim() })
+    if (!user) return res.status(404).json({ message: 'User not found' })
+
+    const expiry = new Date()
+    expiry.setDate(expiry.getDate() + (Number(expirationDays) || 365))
+
+    await User.findByIdAndUpdate(user._id, {
+      $inc: { bandwidthPurchased: Number(gb) },
+      bandwidthExpiry: expiry,
+    })
+
+    res.json({ message: `Added ${gb} GB to ${email}, expires ${expiry.toLocaleDateString()}` })
+  } catch (err) {
+    res.status(500).json({ message: err.message })
+  }
+})
+
+// POST /api/admin/users/:id/add-gb — add GB to a user by ID (inline button)
+router.post('/users/:id/add-gb', authMiddleware, adminOnly, async (req, res) => {
+  try {
+    const { gb } = req.body
+    if (!gb) return res.status(400).json({ message: 'GB required' })
+
+    await User.findByIdAndUpdate(req.params.id, {
+      $inc: { bandwidthPurchased: Number(gb) },
+    })
+
+    res.json({ message: `Added ${gb} GB` })
+  } catch (err) {
+    res.status(500).json({ message: err.message })
+  }
+})
+
 // GET /api/admin/export — export all users as CSV
 router.get('/export', authMiddleware, adminOnly, async (req, res) => {
   try {

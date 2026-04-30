@@ -33,6 +33,7 @@ const userSchema = new mongoose.Schema({
     type: Date,
   },
   bandwidthPurchased: { type: Number, default: 0 }, // in GB
+  bandwidthExpiry: { type: Date },
   usage: {
     proxiesGenerated: { type: Number, default: 0 },
     bandwidthUsed: { type: Number, default: 0 }, // in MB
