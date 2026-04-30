@@ -230,6 +230,7 @@ export default function Admin() {
 // ── USERS TAB ──
 function UsersTab({ users, setUsers, loading, headers, exportCSV, fetchUsers, addToast }) {
   const [search, setSearch]                 = useState('')
+  const [selectedUser, setSelectedUser]     = useState(null)
   const [showPackageModal, setShowPackageModal] = useState(false)
   const [pkgEmail, setPkgEmail]             = useState('')
   const [pkgGb, setPkgGb]                   = useState(10)
@@ -240,6 +241,17 @@ function UsersTab({ users, setUsers, loading, headers, exportCSV, fetchUsers, ad
   const [deleteConfirmUser, setDeleteConfirmUser] = useState(null)
   const [fadingRows, setFadingRows]         = useState(new Set())
   const [loadingAction, setLoadingAction]   = useState({})
+
+  const handleToggleStatus = async (userId) => {
+    try {
+      const res = await axios.put(`/api/admin/users/${userId}/toggle-status`, {}, { headers })
+      setUsers(prev => prev.map(u => u._id === userId ? { ...u, isDisabled: res.data.isDisabled } : u))
+      setSelectedUser(prev => prev ? { ...prev, isDisabled: res.data.isDisabled } : null)
+      addToast(res.data.message)
+    } catch {
+      addToast('Failed to update user status', 'error')
+    }
+  }
 
   const handleAddPackage = async () => {
     if (!pkgEmail) { addToast('Email is required', 'error'); return }
@@ -352,6 +364,83 @@ function UsersTab({ users, setUsers, loading, headers, exportCSV, fetchUsers, ad
           </button>
         </div>
       </div>
+
+      {/* User Details Modal */}
+      {selectedUser && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center px-4">
+          <div className="bg-gray-900 border border-gray-800 rounded-2xl p-8 w-full max-w-md shadow-2xl">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-bold">User Details</h3>
+              <button onClick={() => setSelectedUser(null)} className="text-gray-500 hover:text-white transition text-2xl leading-none">×</button>
+            </div>
+            <div className="space-y-4">
+              <div>
+                <p className="text-xs text-gray-500 mb-0.5">Email</p>
+                <p className="font-semibold">{selectedUser.email}</p>
+              </div>
+              <div>
+                <p className="text-xs text-gray-500 mb-0.5">Full Name</p>
+                <p className="font-semibold">{selectedUser.email}</p>
+              </div>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-gray-500 mb-0.5">Status</p>
+                  <p className={`font-semibold ${selectedUser.isDisabled ? 'text-red-400' : 'text-green-400'}`}>
+                    {selectedUser.isDisabled ? 'Disabled' : 'Active'}
+                  </p>
+                </div>
+                <button
+                  onClick={() => handleToggleStatus(selectedUser._id)}
+                  className={`text-sm font-semibold px-4 py-2 rounded-lg transition ${
+                    selectedUser.isDisabled
+                      ? 'bg-green-600/20 text-green-400 hover:bg-green-600/30 border border-green-500/30'
+                      : 'bg-red-600/20 text-red-400 hover:bg-red-600/30 border border-red-500/30'
+                  }`}
+                >
+                  {selectedUser.isDisabled ? 'Enable' : 'Disable'}
+                </button>
+              </div>
+              <button className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-xl transition flex items-center justify-center gap-2">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
+                </svg>
+                View User Logs
+              </button>
+              <div className="grid grid-cols-2 gap-4 pt-1">
+                <div>
+                  <p className="text-xs text-gray-500 mb-0.5">Created</p>
+                  <p className="font-semibold">{new Date(selectedUser.createdAt).toLocaleDateString()}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500 mb-0.5">Last Login</p>
+                  <p className="font-semibold">{selectedUser.lastLogin ? new Date(selectedUser.lastLogin).toLocaleDateString() : 'Never'}</p>
+                </div>
+              </div>
+              <div className="pt-2 border-t border-gray-800">
+                <p className="text-sm font-semibold mb-3">Request Statistics</p>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="bg-gray-800 rounded-xl p-3">
+                    <p className="text-xs text-gray-500 mb-1">Proxies Generated</p>
+                    <p className="text-xl font-bold text-purple-400">{selectedUser.usage?.proxiesGenerated || 0}</p>
+                  </div>
+                  <div className="bg-gray-800 rounded-xl p-3">
+                    <p className="text-xs text-gray-500 mb-1">Bandwidth Used</p>
+                    <p className="text-xl font-bold">{((selectedUser.usage?.bandwidthUsed || 0) / 1024).toFixed(2)} GB</p>
+                  </div>
+                  <div className="bg-gray-800 rounded-xl p-3">
+                    <p className="text-xs text-gray-500 mb-1">GB Purchased</p>
+                    <p className="text-xl font-bold text-green-400">{selectedUser.bandwidthPurchased || 0} GB</p>
+                  </div>
+                  <div className="bg-gray-800 rounded-xl p-3">
+                    <p className="text-xs text-gray-500 mb-1">Packages</p>
+                    <p className="text-xl font-bold">{selectedUser.packages?.length || 0}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Add Package Modal */}
       {showPackageModal && (
@@ -468,7 +557,9 @@ function UsersTab({ users, setUsers, loading, headers, exportCSV, fetchUsers, ad
                   className="border-b border-gray-800/50 hover:bg-gray-800/20"
                 >
                   <td className="px-6 py-4">
-                    {u._rowIndex === 0 ? u.email : <span className="text-gray-600 text-xs pl-2">↳ same user</span>}
+                    {u._rowIndex === 0
+                      ? <button onClick={() => setSelectedUser(u)} className="text-left hover:text-purple-400 transition">{u.email}</button>
+                      : <span className="text-gray-600 text-xs pl-2">↳ same user</span>}
                   </td>
                   <td className="px-6 py-4 font-mono text-purple-400 text-xs transition-all duration-300">
                     {u._rowIndex === 0 ? u.proxyUsername : ''}

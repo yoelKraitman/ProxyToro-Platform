@@ -54,6 +54,21 @@ router.put('/users/:id/role', authMiddleware, adminOnly, async (req, res) => {
   }
 })
 
+// PUT /api/admin/users/:id/toggle-status — enable or disable a user account
+router.put('/users/:id/toggle-status', authMiddleware, adminOnly, async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id)
+    if (!user) return res.status(404).json({ message: 'User not found' })
+
+    user.isDisabled = !user.isDisabled
+    await user.save()
+
+    res.json({ message: user.isDisabled ? 'User disabled' : 'User enabled', isDisabled: user.isDisabled })
+  } catch (err) {
+    res.status(500).json({ message: err.message })
+  }
+})
+
 // DELETE /api/admin/users/:id
 router.delete('/users/:id', authMiddleware, adminOnly, async (req, res) => {
   try {

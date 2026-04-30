@@ -77,10 +77,15 @@ router.post('/login', async (req, res) => {
     if (!match)
       return res.status(401).json({ message: 'Invalid email or password' })
 
+    if (user.isDisabled)
+      return res.status(403).json({ message: 'Your account has been disabled. Please contact support.' })
+
     // If 2FA is enabled, don't give token yet — ask for 2FA code
     if (user.twoFactorEnabled) {
       return res.json({ requires2FA: true, userId: user._id })
     }
+
+    await User.findByIdAndUpdate(user._id, { lastLogin: new Date() })
 
     const token = jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET, { expiresIn: '7d' })
 
@@ -111,6 +116,8 @@ router.post('/2fa-login', async (req, res) => {
 
     if (!valid)
       return res.status(401).json({ message: 'Invalid 2FA code' })
+
+    await User.findByIdAndUpdate(user._id, { lastLogin: new Date() })
 
     const jwtToken = jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET, { expiresIn: '7d' })
 
