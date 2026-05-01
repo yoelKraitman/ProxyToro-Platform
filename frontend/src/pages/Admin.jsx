@@ -517,23 +517,30 @@ function UsersTab({ users, setUsers, loading, headers, exportCSV, fetchUsers, ad
             placeholder="Search by email or name..."
             className="w-full bg-gray-900 border border-gray-800 text-white rounded-xl pl-11 pr-4 py-3 focus:outline-none focus:border-purple-500 transition text-sm"
           />
-          {/* Autocomplete dropdown */}
-          {search.trim() && filteredUsers.length > 0 && filteredUsers.length < users.length && (
-            <div className="absolute top-full left-0 right-0 mt-1 bg-gray-900 border border-gray-700 rounded-xl shadow-2xl z-20 overflow-hidden max-h-48 overflow-y-auto">
-              {filteredUsers.slice(0, 8).map(u => (
-                <button
-                  key={u._id}
-                  onMouseDown={() => setSearch(u.email)}
-                  className="w-full text-left px-4 py-3 text-sm text-gray-300 hover:bg-gray-800 hover:text-white transition flex items-center gap-3"
-                >
-                  <div className="w-7 h-7 rounded-full bg-purple-600/20 flex items-center justify-center shrink-0 text-xs text-purple-400 font-bold">
-                    {u.email[0].toUpperCase()}
-                  </div>
-                  <span>{u.email}</span>
-                </button>
-              ))}
-            </div>
-          )}
+          {/* Autocomplete dropdown — always in DOM, animated smoothly */}
+          <div
+            className="absolute top-full left-0 right-0 mt-1 bg-gray-900 border border-gray-700 rounded-xl shadow-2xl z-20 overflow-hidden overflow-y-auto"
+            style={{
+              maxHeight: search.trim() && filteredUsers.length > 0 && filteredUsers.length < users.length ? '192px' : '0px',
+              opacity:   search.trim() && filteredUsers.length > 0 && filteredUsers.length < users.length ? 1 : 0,
+              transform: search.trim() && filteredUsers.length > 0 && filteredUsers.length < users.length ? 'translateY(0)' : 'translateY(-6px)',
+              pointerEvents: search.trim() && filteredUsers.length > 0 && filteredUsers.length < users.length ? 'auto' : 'none',
+              transition: 'max-height 200ms ease, opacity 180ms ease, transform 180ms ease',
+            }}
+          >
+            {filteredUsers.slice(0, 8).map(u => (
+              <button
+                key={u._id}
+                onMouseDown={() => setSearch(u.email)}
+                className="w-full text-left px-4 py-3 text-sm text-gray-300 hover:bg-gray-800 hover:text-white transition-colors flex items-center gap-3"
+              >
+                <div className="w-7 h-7 rounded-full bg-purple-600/20 flex items-center justify-center shrink-0 text-xs text-purple-400 font-bold">
+                  {u.email[0].toUpperCase()}
+                </div>
+                <span>{u.email}</span>
+              </button>
+            ))}
+          </div>
         </div>
         <button
           onClick={() => setSearch('')}
