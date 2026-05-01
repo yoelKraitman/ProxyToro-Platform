@@ -7,15 +7,6 @@ import { sendVerificationEmail } from '../services/email.js'
 
 const router = express.Router()
 
-// Generate unique proxy credentials for each user
-function generateProxyCredentials(email) {
-  const base = email.split('@')[0].replace(/[^a-z0-9]/gi, '').toLowerCase()
-  const suffix = Math.random().toString(36).substring(2, 7)
-  return {
-    proxyUsername: `pt_${base}_${suffix}`,
-    proxyPassword: Math.random().toString(36).substring(2, 14)
-  }
-}
 
 // POST /api/auth/register
 router.post('/register', async (req, res) => {
@@ -32,15 +23,9 @@ router.post('/register', async (req, res) => {
     if (exists)
       return res.status(400).json({ message: 'Email already registered' })
 
-    const { proxyUsername, proxyPassword } = generateProxyCredentials(email)
-
-    // Generate a random verification token
     const verificationToken = crypto.randomBytes(32).toString('hex')
 
-    const user = await User.create({
-      email, password, proxyUsername, proxyPassword,
-      verificationToken
-    })
+    const user = await User.create({ email, password, verificationToken })
 
     // Send verification email (don't block registration if it fails)
     try {
@@ -53,7 +38,7 @@ router.post('/register', async (req, res) => {
 
     res.status(201).json({
       token,
-      user: { id: user._id, email: user.email, role: user.role, proxyUsername: user.proxyUsername, isVerified: user.isVerified },
+      user: { id: user._id, email: user.email, role: user.role, isVerified: user.isVerified },
       message: 'Account created! Please check your email to verify your account.'
     })
   } catch (err) {
@@ -91,7 +76,7 @@ router.post('/login', async (req, res) => {
 
     res.json({
       token,
-      user: { id: user._id, email: user.email, role: user.role, proxyUsername: user.proxyUsername, isVerified: user.isVerified }
+      user: { id: user._id, email: user.email, role: user.role, isVerified: user.isVerified }
     })
   } catch (err) {
     res.status(500).json({ message: 'Server error', error: err.message })
@@ -123,7 +108,7 @@ router.post('/2fa-login', async (req, res) => {
 
     res.json({
       token: jwtToken,
-      user: { id: user._id, email: user.email, role: user.role, proxyUsername: user.proxyUsername, isVerified: user.isVerified }
+      user: { id: user._id, email: user.email, role: user.role, isVerified: user.isVerified }
     })
   } catch (err) {
     res.status(500).json({ message: err.message })

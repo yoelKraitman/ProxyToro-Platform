@@ -17,13 +17,6 @@ const userSchema = new mongoose.Schema({
     enum: ['user', 'admin'],
     default: 'user',
   },
-  proxyUsername: {
-    type: String,
-    unique: true,
-  },
-  proxyPassword: {
-    type: String,
-  },
   activePlan: {
     type: String,
     enum: ['none', 'starter', 'pro', 'business'],

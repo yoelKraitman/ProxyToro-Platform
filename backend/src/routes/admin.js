@@ -13,30 +13,13 @@ function adminOnly(req, res, next) {
 // GET /api/admin/users
 router.get('/users', authMiddleware, adminOnly, async (req, res) => {
   try {
-    const users = await User.find().select('-password -proxyPassword').sort({ createdAt: -1 })
+    const users = await User.find().select('-password').sort({ createdAt: -1 })
     res.json(users)
   } catch (err) {
     res.status(500).json({ message: 'Server error', error: err.message })
   }
 })
 
-// POST /api/admin/users/:id/reset-credentials
-router.post('/users/:id/reset-credentials', authMiddleware, adminOnly, async (req, res) => {
-  try {
-    const user = await User.findById(req.params.id)
-    if (!user) return res.status(404).json({ message: 'User not found' })
-
-    const base = user.email.split('@')[0].replace(/[^a-z0-9]/gi, '').toLowerCase()
-    const suffix = Math.random().toString(36).substring(2, 7)
-    user.proxyUsername = `pt_${base}_${suffix}`
-    user.proxyPassword = Math.random().toString(36).substring(2, 14)
-    await user.save()
-
-    res.json({ message: 'Credentials reset', proxyUsername: user.proxyUsername })
-  } catch (err) {
-    res.status(500).json({ message: err.message })
-  }
-})
 
 // PUT /api/admin/users/:id/role
 router.put('/users/:id/role', authMiddleware, adminOnly, async (req, res) => {
@@ -46,7 +29,7 @@ router.put('/users/:id/role', authMiddleware, adminOnly, async (req, res) => {
       return res.status(400).json({ message: 'Invalid role' })
 
     const user = await User.findByIdAndUpdate(req.params.id, { role }, { new: true })
-      .select('-password -proxyPassword')
+      .select('-password')
 
     res.json(user)
   } catch (err) {
@@ -131,12 +114,12 @@ router.post('/users/:id/add-gb', authMiddleware, adminOnly, async (req, res) => 
 // GET /api/admin/export — export all users as CSV
 router.get('/export', authMiddleware, adminOnly, async (req, res) => {
   try {
-    const users = await User.find().select('-password -proxyPassword')
+    const users = await User.find().select('-password')
 
     const csv = [
-      'Email,ProxyUsername,Role,Plan,ProxiesGenerated,JoinedAt',
+      'Email,Role,GB Purchased,ProxiesGenerated,JoinedAt',
       ...users.map(u =>
-        `${u.email},${u.proxyUsername},${u.role},${u.activePlan || 'none'},${u.usage?.proxiesGenerated || 0},${new Date(u.createdAt).toLocaleDateString()}`
+        `${u.email},${u.role},${u.bandwidthPurchased || 0},${u.usage?.proxiesGenerated || 0},${new Date(u.createdAt).toLocaleDateString()}`
       )
     ].join('\n')
 

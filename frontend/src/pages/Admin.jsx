@@ -575,7 +575,6 @@ function UsersTab({ users, setUsers, loading, headers, exportCSV, fetchUsers, ad
           <thead>
             <tr className="border-b border-gray-800 text-gray-400">
               <th className="text-left px-6 py-4">Email</th>
-              <th className="text-left px-6 py-4">Proxy Username</th>
               <th className="text-left px-6 py-4">Plan (GB)</th>
               <th className="text-left px-6 py-4">Proxy Type</th>
               <th className="text-left px-6 py-4">Role</th>
@@ -605,9 +604,6 @@ function UsersTab({ users, setUsers, loading, headers, exportCSV, fetchUsers, ad
                     {u._rowIndex === 0
                       ? <button onClick={() => setSelectedUser(u)} className="text-left hover:text-purple-400 transition">{u.email}</button>
                       : <span className="text-gray-600 text-xs pl-2">↳ same user</span>}
-                  </td>
-                  <td className="px-6 py-4 font-mono text-purple-400 text-xs transition-all duration-300">
-                    {u._rowIndex === 0 ? u.proxyUsername : ''}
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex flex-col">
@@ -908,7 +904,6 @@ function TopCustomers({ users }) {
                   </td>
                   <td className="px-6 py-4">
                     <p className="font-medium">{u.email}</p>
-                    <p className="text-xs text-gray-500 font-mono">{u.proxyUsername}</p>
                   </td>
                   <td className="px-6 py-4 capitalize text-purple-400 font-medium">{u.activePlan || 'Free Trial'}</td>
                   <td className="px-6 py-4 text-green-400 font-semibold">${u.totalSpend.toFixed(2)}</td>

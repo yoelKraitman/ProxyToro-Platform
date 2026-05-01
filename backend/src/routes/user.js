@@ -41,26 +41,6 @@ router.put('/password', authMiddleware, async (req, res) => {
   }
 })
 
-// POST /api/user/reset-credentials — regenerate proxy credentials
-router.post('/reset-credentials', authMiddleware, async (req, res) => {
-  try {
-    const user = await User.findById(req.user.id)
-    const base = user.email.split('@')[0].replace(/[^a-z0-9]/gi, '').toLowerCase()
-    const suffix = Math.random().toString(36).substring(2, 7)
-
-    user.proxyUsername = `pt_${base}_${suffix}`
-    user.proxyPassword = Math.random().toString(36).substring(2, 14)
-    await user.save()
-
-    res.json({
-      message: 'Credentials regenerated',
-      proxyUsername: user.proxyUsername,
-      proxyPassword: user.proxyPassword
-    })
-  } catch (err) {
-    res.status(500).json({ message: err.message })
-  }
-})
 
 // DELETE /api/user/me — delete own account
 router.delete('/me', authMiddleware, async (req, res) => {

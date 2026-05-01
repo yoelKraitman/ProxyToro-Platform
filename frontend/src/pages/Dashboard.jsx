@@ -403,23 +403,15 @@ export default function Dashboard() {
               <h3 className="font-semibold mb-4 text-purple-400">Your Proxy Credentials</h3>
               <div className="space-y-3">
                 {[
-                  { label: 'Proxy Username', value: profile?.proxyUsername || user?.proxyUsername },
-                  { label: 'Proxy Password', value: profile?.proxyPassword },
                   { label: 'Email', value: user?.email },
                   { label: 'Role', value: user?.role },
+                  { label: 'Gateway Host', value: 'gate.proxytoro.com' },
+                  { label: 'Gateway Port', value: '8080' },
                 ].map(({ label, value }) => (
                   <div key={label} className="flex justify-between items-center bg-gray-800 rounded-lg px-4 py-3">
                     <span className="text-gray-400 text-sm">{label}</span>
                     <div className="flex items-center gap-3">
                       <span className="font-mono text-white text-sm">{value}</span>
-                      {(label === 'Proxy Username' || label === 'Proxy Password') && (
-                        <button
-                          onClick={() => copyToClipboard(value, label)}
-                          className="text-xs text-purple-400 hover:text-purple-300 transition"
-                        >
-                          {copied === label ? 'Copied!' : 'Copy'}
-                        </button>
-                      )}
                     </div>
                   </div>
                 ))}
@@ -1001,25 +993,6 @@ function AccountTab({ user, profile }) {
         </button>
       </div>
 
-      {/* Reset Proxy Credentials */}
-      <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
-        <h3 className="text-lg font-semibold mb-2">Proxy Credentials</h3>
-        <p className="text-gray-400 text-sm mb-4">
-          Current username: <span className="font-mono text-purple-400">{profile?.proxyUsername}</span>
-        </p>
-        {credMsg && (
-          <p className={`text-sm mb-3 ${credMsg.type === 'success' ? 'text-green-400' : 'text-red-400'}`}>
-            {credMsg.text}
-          </p>
-        )}
-        <button
-          onClick={resetCredentials}
-          disabled={credLoading}
-          className="border border-gray-700 hover:border-purple-500 text-gray-300 hover:text-white disabled:opacity-50 px-6 py-2 rounded-lg text-sm transition"
-        >
-          {credLoading ? 'Regenerating...' : 'Regenerate Credentials'}
-        </button>
-      </div>
 
       {/* 2FA Section */}
       <TwoFASection profile={profile} />
