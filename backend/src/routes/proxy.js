@@ -76,7 +76,7 @@ router.get('/list', authMiddleware, async (req, res) => {
 // GET /api/proxy/test — send a real request through GlobeData and return IP + status
 router.get('/test', authMiddleware, async (req, res) => {
   try {
-    const host     = process.env.PROXY_HOST || 'gate.proxytoro.com'
+    const host     = 'proxy.globedata.io'
     const port     = process.env.PROXY_PORT || '8080'
     const username = process.env.GLOBEDATA_USERNAME
     const password = process.env.GLOBEDATA_PASSWORD
