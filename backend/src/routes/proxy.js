@@ -1,7 +1,7 @@
 import express from 'express'
+import http from 'node:http'
 import { authMiddleware } from '../middleware/auth.js'
 import User from '../models/User.js'
-import { fetch, ProxyAgent } from 'undici'
 
 const router = express.Router()
 
@@ -74,37 +74,57 @@ router.get('/list', authMiddleware, async (req, res) => {
 })
 
 // GET /api/proxy/test — send a real request through GlobeData and return IP + status
-router.get('/test', authMiddleware, async (req, res) => {
-  try {
-    const host     = 'proxy.globedata.io'
-    const port     = process.env.PROXY_PORT || '8080'
-    const username = process.env.GLOBEDATA_USERNAME
-    const password = process.env.GLOBEDATA_PASSWORD
+router.get('/test', authMiddleware, (req, res) => {
+  const host     = 'proxy.globedata.io'
+  const port     = parseInt(process.env.PROXY_PORT || '8080')
+  const username = process.env.GLOBEDATA_USERNAME
+  const password = process.env.GLOBEDATA_PASSWORD
 
-    if (!username || !password)
-      return res.status(500).json({ message: 'Proxy credentials not configured on server.' })
+  if (!username || !password)
+    return res.status(500).json({ message: 'Proxy credentials not configured on server.' })
 
-    const proxyUrl = `http://${username}:${password}@${host}:${port}`
-    const agent    = new ProxyAgent(proxyUrl)
+  const auth  = Buffer.from(`${username}:${password}`).toString('base64')
+  const start = Date.now()
 
-    const start    = Date.now()
-    const response = await fetch('https://api.ipify.org?format=json', {
-      dispatcher: agent,
+  const request = http.request({
+    host,
+    port,
+    method: 'GET',
+    path: 'http://api.ipify.org/?format=json',
+    headers: {
+      'Host': 'api.ipify.org',
+      'Proxy-Authorization': `Basic ${auth}`,
+    },
+  }, (proxyRes) => {
+    let body = ''
+    proxyRes.on('data', chunk => body += chunk)
+    proxyRes.on('end', () => {
+      try {
+        const data = JSON.parse(body)
+        res.json({
+          success:    true,
+          ip:         data.ip,
+          statusCode: proxyRes.statusCode,
+          latencyMs:  Date.now() - start,
+          host,
+          port,
+        })
+      } catch {
+        res.status(502).json({ success: false, message: 'Bad response from proxy: ' + body })
+      }
     })
-    const latencyMs = Date.now() - start
-    const data      = await response.json()
+  })
 
-    res.json({
-      success:    true,
-      ip:         data.ip,
-      statusCode: response.status,
-      latencyMs,
-      host,
-      port,
-    })
-  } catch (err) {
+  request.setTimeout(10000, () => {
+    request.destroy()
+    res.status(504).json({ success: false, message: 'Proxy connection timed out' })
+  })
+
+  request.on('error', err => {
     res.status(502).json({ success: false, message: err.message })
-  }
+  })
+
+  request.end()
 })
 
 export default router
