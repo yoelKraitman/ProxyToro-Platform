@@ -571,14 +571,11 @@ function UsersTab({ users, setUsers, loading, headers, exportCSV, fetchUsers, ad
                     </div>
                   </td>
                   <td className="px-6 py-4">
-                    {u._rowType ? (
-                      <span className={`px-2 py-1 rounded-full text-xs border ${
-                        u._rowType === 'Residential' ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' :
-                        u._rowType === 'Datacenter'  ? 'bg-orange-500/10 text-orange-400 border-orange-500/20' :
-                        u._rowType === 'Mobile'      ? 'bg-green-500/10 text-green-400 border-green-500/20' :
-                                                       'bg-gray-700 text-gray-300 border-gray-600'
-                      }`}>{u._rowType}</span>
-                    ) : <span className="text-gray-600 text-xs">—</span>}
+                    {u._rowIndex === 0 && (
+                      <span className="px-2 py-1 rounded-full text-xs border bg-blue-500/10 text-blue-400 border-blue-500/20">
+                        Residential
+                      </span>
+                    )}
                   </td>
                   <td className="px-6 py-4">
                     {u._rowIndex === 0 && (
@@ -593,13 +590,6 @@ function UsersTab({ users, setUsers, loading, headers, exportCSV, fetchUsers, ad
                           onClick={() => { setAddGbUser(u._id); setGbAmount(10); setDeleteConfirmUser(null) }}
                           className="text-xs text-green-400 hover:text-green-300 hover:bg-green-400/10 px-2 py-1 rounded-lg transition font-medium"
                         >+GB</button>
-                        <button
-                          onClick={() => handleReset(u._id, u.email)}
-                          disabled={isLoading(u._id, 'reset')}
-                          className="flex items-center gap-1 text-xs text-purple-400 hover:text-purple-300 hover:bg-purple-400/10 px-2 py-1 rounded-lg transition disabled:opacity-50"
-                        >
-                          {isLoading(u._id, 'reset') ? <Spinner /> : 'Reset'}
-                        </button>
                         <button
                           onClick={() => { setDeleteConfirmUser(u._id); setAddGbUser(null) }}
                           className="text-xs text-red-400 hover:text-red-300 hover:bg-red-400/10 px-2 py-1 rounded-lg transition"
