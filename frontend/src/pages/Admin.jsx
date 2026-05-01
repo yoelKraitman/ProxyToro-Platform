@@ -230,6 +230,7 @@ export default function Admin() {
 // ── USERS TAB ──
 function UsersTab({ users, setUsers, loading, headers, exportCSV, fetchUsers, addToast }) {
   const [search, setSearch]                 = useState('')
+  const [appliedSearch, setAppliedSearch]   = useState('')
   const [selectedUser, setSelectedUser]     = useState(null)
   const [showPackageModal, setShowPackageModal] = useState(false)
   const [pkgEmail, setPkgEmail]             = useState('')
@@ -335,8 +336,12 @@ function UsersTab({ users, setUsers, loading, headers, exportCSV, fetchUsers, ad
     }
   }
 
-  const filteredUsers = search.trim()
+  const suggestions = search.trim()
     ? users.filter(u => u.email.toLowerCase().includes(search.toLowerCase()))
+    : []
+
+  const filteredUsers = appliedSearch.trim()
+    ? users.filter(u => u.email.toLowerCase().includes(appliedSearch.toLowerCase()))
     : users
 
   const rows = filteredUsers.flatMap(u => {
@@ -512,7 +517,7 @@ function UsersTab({ users, setUsers, loading, headers, exportCSV, fetchUsers, ad
           <input
             type="text"
             value={search}
-            onChange={e => setSearch(e.target.value)}
+            onChange={e => { setSearch(e.target.value); setAppliedSearch('') }}
             onBlur={() => setTimeout(() => setSearch(s => s), 150)}
             placeholder="Search by email or name..."
             className="w-full bg-gray-900 border border-gray-800 text-white rounded-xl pl-11 pr-4 py-3 focus:outline-none focus:border-purple-500 transition text-sm"
@@ -521,17 +526,20 @@ function UsersTab({ users, setUsers, loading, headers, exportCSV, fetchUsers, ad
           <div
             className="absolute top-full left-0 right-0 mt-1 bg-gray-900 border border-gray-700 rounded-xl shadow-2xl z-20 overflow-hidden overflow-y-auto"
             style={{
-              maxHeight: search.trim() && filteredUsers.length > 0 && filteredUsers.length < users.length ? '192px' : '0px',
-              opacity:   search.trim() && filteredUsers.length > 0 && filteredUsers.length < users.length ? 1 : 0,
-              transform: search.trim() && filteredUsers.length > 0 && filteredUsers.length < users.length ? 'translateY(0)' : 'translateY(-6px)',
-              pointerEvents: search.trim() && filteredUsers.length > 0 && filteredUsers.length < users.length ? 'auto' : 'none',
+              maxHeight: suggestions.length > 0 ? '192px' : '0px',
+              opacity:   suggestions.length > 0 ? 1 : 0,
+              transform: suggestions.length > 0 ? 'translateY(0)' : 'translateY(-6px)',
+              pointerEvents: suggestions.length > 0 ? 'auto' : 'none',
               transition: 'max-height 200ms ease, opacity 180ms ease, transform 180ms ease',
             }}
           >
-            {filteredUsers.slice(0, 8).map(u => (
+            {suggestions.slice(0, 8).map(u => (
               <button
                 key={u._id}
-                onMouseDown={() => setSearch(u.email)}
+                onMouseDown={() => {
+                  setSearch(u.email)
+                  setAppliedSearch(u.email)
+                }}
                 className="w-full text-left px-4 py-3 text-sm text-gray-300 hover:bg-gray-800 hover:text-white transition-colors flex items-center gap-3"
               >
                 <div className="w-7 h-7 rounded-full bg-purple-600/20 flex items-center justify-center shrink-0 text-xs text-purple-400 font-bold">
@@ -543,7 +551,7 @@ function UsersTab({ users, setUsers, loading, headers, exportCSV, fetchUsers, ad
           </div>
         </div>
         <button
-          onClick={() => setSearch('')}
+          onClick={() => { setSearch(''); setAppliedSearch('') }}
           className="bg-purple-600 hover:bg-purple-700 text-white text-sm font-semibold px-6 py-3 rounded-xl transition"
         >
           {search ? 'Clear' : 'Search'}
