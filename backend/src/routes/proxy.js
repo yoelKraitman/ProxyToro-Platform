@@ -1,6 +1,7 @@
 import express from 'express'
 import { authMiddleware } from '../middleware/auth.js'
 import User from '../models/User.js'
+import { fetch, ProxyAgent } from 'undici'
 
 const router = express.Router()
 
@@ -69,6 +70,40 @@ router.get('/list', authMiddleware, async (req, res) => {
     res.json({ count: proxies.length, proxies })
   } catch (err) {
     res.status(500).json({ message: 'Server error', error: err.message })
+  }
+})
+
+// GET /api/proxy/test — send a real request through GlobeData and return IP + status
+router.get('/test', authMiddleware, async (req, res) => {
+  try {
+    const host     = process.env.PROXY_HOST || 'gate.proxytoro.com'
+    const port     = process.env.PROXY_PORT || '8080'
+    const username = process.env.GLOBEDATA_USERNAME
+    const password = process.env.GLOBEDATA_PASSWORD
+
+    if (!username || !password)
+      return res.status(500).json({ message: 'Proxy credentials not configured on server.' })
+
+    const proxyUrl = `http://${username}:${password}@${host}:${port}`
+    const agent    = new ProxyAgent(proxyUrl)
+
+    const start    = Date.now()
+    const response = await fetch('https://api.ipify.org?format=json', {
+      dispatcher: agent,
+    })
+    const latencyMs = Date.now() - start
+    const data      = await response.json()
+
+    res.json({
+      success:    true,
+      ip:         data.ip,
+      statusCode: response.status,
+      latencyMs,
+      host,
+      port,
+    })
+  } catch (err) {
+    res.status(502).json({ success: false, message: err.message })
   }
 })
 

@@ -48,6 +48,8 @@ export default function Dashboard() {
 
   const [paymentLoading, setPaymentLoading] = useState(false)
   const [paymentError, setPaymentError] = useState('')
+  const [testResult, setTestResult] = useState(null)
+  const [testLoading, setTestLoading] = useState(false)
   const [proxyCountry, setProxyCountry] = useState('US')
   const [proxyState, setProxyState] = useState('')
   const [proxyCity, setProxyCity] = useState('')
@@ -78,6 +80,22 @@ export default function Dashboard() {
       setProxyError(err.response?.data?.message || 'Failed to generate proxy')
     } finally {
       setProxyLoading(false)
+    }
+  }
+
+  const testProxy = async () => {
+    setTestLoading(true)
+    setTestResult(null)
+    try {
+      const token = localStorage.getItem('token')
+      const res = await axios.get('/api/proxy/test', {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      setTestResult({ success: true, ...res.data })
+    } catch (err) {
+      setTestResult({ success: false, message: err.response?.data?.message || 'Connection failed' })
+    } finally {
+      setTestLoading(false)
     }
   }
 
@@ -531,6 +549,64 @@ export default function Dashboard() {
                 </svg>
                 {proxyLoading ? 'Generating...' : 'Generate Proxy'}
               </button>
+            </div>
+
+            {/* Test Connection */}
+            <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 space-y-4">
+              <div>
+                <h3 className="font-semibold">Test Proxy Connection</h3>
+                <p className="text-gray-400 text-xs mt-1">Send a real request through the proxy and verify it works.</p>
+              </div>
+              <button
+                onClick={testProxy}
+                disabled={testLoading}
+                className="w-full border border-purple-500/50 hover:border-purple-500 hover:bg-purple-500/10 disabled:opacity-50 text-purple-400 font-semibold py-3 rounded-lg transition flex items-center justify-center gap-2"
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4">
+                  <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+                </svg>
+                {testLoading ? 'Testing...' : 'Test Connection'}
+              </button>
+
+              {testResult && (
+                <div className={`rounded-lg px-5 py-4 border ${testResult.success ? 'bg-green-500/10 border-green-500/30' : 'bg-red-500/10 border-red-500/30'}`}>
+                  {testResult.success ? (
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2 text-green-400 font-semibold">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-4 h-4">
+                          <polyline points="20 6 9 17 4 12"/>
+                        </svg>
+                        Proxy is working!
+                      </div>
+                      <div className="grid grid-cols-2 gap-3 mt-3 text-sm">
+                        <div className="bg-gray-800 rounded-lg p-3">
+                          <p className="text-xs text-gray-500 mb-1">Your Proxy IP</p>
+                          <p className="font-mono font-bold text-white">{testResult.ip}</p>
+                        </div>
+                        <div className="bg-gray-800 rounded-lg p-3">
+                          <p className="text-xs text-gray-500 mb-1">Status</p>
+                          <p className="font-bold text-green-400">{testResult.statusCode} OK</p>
+                        </div>
+                        <div className="bg-gray-800 rounded-lg p-3">
+                          <p className="text-xs text-gray-500 mb-1">Latency</p>
+                          <p className="font-bold">{testResult.latencyMs} ms</p>
+                        </div>
+                        <div className="bg-gray-800 rounded-lg p-3">
+                          <p className="text-xs text-gray-500 mb-1">Gateway</p>
+                          <p className="font-mono text-xs text-white">{testResult.host}:{testResult.port}</p>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2 text-red-400">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-4 h-4 shrink-0">
+                        <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+                      </svg>
+                      {testResult.message}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Output */}
