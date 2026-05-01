@@ -231,6 +231,7 @@ export default function Admin() {
 function UsersTab({ users, setUsers, loading, headers, exportCSV, fetchUsers, addToast }) {
   const [search, setSearch]                 = useState('')
   const [appliedSearch, setAppliedSearch]   = useState('')
+  const [tableVisible, setTableVisible]     = useState(true)
   const [selectedUser, setSelectedUser]     = useState(null)
   const [showPackageModal, setShowPackageModal] = useState(false)
   const [pkgEmail, setPkgEmail]             = useState('')
@@ -538,7 +539,11 @@ function UsersTab({ users, setUsers, loading, headers, exportCSV, fetchUsers, ad
                 key={u._id}
                 onMouseDown={() => {
                   setSearch(u.email)
-                  setAppliedSearch(u.email)
+                  setTableVisible(false)
+                  setTimeout(() => {
+                    setAppliedSearch(u.email)
+                    setTableVisible(true)
+                  }, 180)
                 }}
                 className="w-full text-left px-4 py-3 text-sm text-gray-300 hover:bg-gray-800 hover:text-white transition-colors flex items-center gap-3"
               >
@@ -551,14 +556,21 @@ function UsersTab({ users, setUsers, loading, headers, exportCSV, fetchUsers, ad
           </div>
         </div>
         <button
-          onClick={() => { setSearch(''); setAppliedSearch('') }}
+          onClick={() => {
+            setSearch('')
+            setTableVisible(false)
+            setTimeout(() => { setAppliedSearch(''); setTableVisible(true) }, 180)
+          }}
           className="bg-purple-600 hover:bg-purple-700 text-white text-sm font-semibold px-6 py-3 rounded-xl transition"
         >
           {search ? 'Clear' : 'Search'}
         </button>
       </div>
 
-      <div className="bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden overflow-x-auto">
+      <div
+        className="bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden overflow-x-auto"
+        style={{ opacity: tableVisible ? 1 : 0, transition: 'opacity 180ms ease' }}
+      >
         <table className="w-full text-sm min-w-[800px]">
           <thead>
             <tr className="border-b border-gray-800 text-gray-400">
