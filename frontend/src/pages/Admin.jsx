@@ -312,13 +312,13 @@ function UsersTab({ users, setUsers, loading, headers, exportCSV, fetchUsers, ad
     }
   }
 
-  // Optimistic +GB: update planGB in place immediately
+  // Optimistic +GB: update bandwidthPurchased in place immediately
   const handleAddGb = async (userId, email) => {
     setActionLoading(userId, 'gb', true)
     const gb = Number(gbAmount)
     // Update local state immediately
     setUsers(prev => prev.map(u =>
-      u._id === userId ? { ...u, planGB: (u.planGB || 0) + gb } : u
+      u._id === userId ? { ...u, bandwidthPurchased: (u.bandwidthPurchased || 0) + gb } : u
     ))
     setAddGbUser(null)
     try {
@@ -327,7 +327,7 @@ function UsersTab({ users, setUsers, loading, headers, exportCSV, fetchUsers, ad
     } catch (err) {
       // Revert
       setUsers(prev => prev.map(u =>
-        u._id === userId ? { ...u, planGB: (u.planGB || 0) - gb } : u
+        u._id === userId ? { ...u, bandwidthPurchased: (u.bandwidthPurchased || 0) - gb } : u
       ))
       addToast(err.response?.data?.message || 'Failed to add GB', 'error')
     } finally {
@@ -566,8 +566,8 @@ function UsersTab({ users, setUsers, loading, headers, exportCSV, fetchUsers, ad
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex flex-col">
-                      <span className="capitalize font-medium">{u.activePlan && u.activePlan !== 'none' ? u.activePlan : 'Free Trial'}</span>
-                      <span className="text-xs text-purple-400 transition-all duration-300">{u.planGB ? `${u.planGB} GB` : '— GB'}</span>
+                      <span className="capitalize font-medium">{u.bandwidthPurchased > 0 ? 'Active' : 'Free Trial'}</span>
+                      <span className="text-xs text-purple-400 transition-all duration-300">{u.bandwidthPurchased ? `${u.bandwidthPurchased} GB` : '— GB'}</span>
                     </div>
                   </td>
                   <td className="px-6 py-4">
@@ -825,11 +825,11 @@ function TopCustomers({ users }) {
     .filter(u => u.invoices?.length > 0)
     .map(u => {
       const totalSpend = u.invoices.reduce((s, inv) => s + (inv.amount || 0), 0)
-      const planGB = u.planGB || 0
+      const bandwidthPurchased = u.bandwidthPurchased || 0
       const usedMB = u.usage?.bandwidthUsed || 0
       const usedGB = usedMB / 1024
-      const dataLeft = Math.max(planGB - usedGB, 0)
-      return { ...u, totalSpend, planGB, usedGB, dataLeft }
+      const dataLeft = Math.max(bandwidthPurchased - usedGB, 0)
+      return { ...u, totalSpend, bandwidthPurchased, usedGB, dataLeft }
     })
     .sort((a, b) => b.totalSpend - a.totalSpend)
     .slice(0, 10)
@@ -862,7 +862,7 @@ function TopCustomers({ users }) {
           </thead>
           <tbody>
             {top.map((u, i) => {
-              const pct = u.planGB > 0 ? Math.min((u.usedGB / u.planGB) * 100, 100) : 0
+              const pct = u.bandwidthPurchased > 0 ? Math.min((u.usedGB / u.bandwidthPurchased) * 100, 100) : 0
               const isLow = pct > 80
               return (
                 <tr key={u._id} className="border-b border-gray-800/50 hover:bg-gray-800/20 transition-colors">
@@ -879,7 +879,7 @@ function TopCustomers({ users }) {
                   <td className="px-6 py-4 text-green-400 font-semibold">${u.totalSpend.toFixed(2)}</td>
                   <td className="px-6 py-4">
                     <div className="flex flex-col gap-1">
-                      <span className="text-xs text-gray-400">{u.usedGB.toFixed(2)} / {u.planGB} GB</span>
+                      <span className="text-xs text-gray-400">{u.usedGB.toFixed(2)} / {u.bandwidthPurchased} GB</span>
                       <div className="w-24 bg-gray-800 rounded-full h-1.5">
                         <div
                           className={`h-1.5 rounded-full transition-all ${isLow ? 'bg-red-500' : 'bg-purple-500'}`}
