@@ -125,17 +125,24 @@ export default function Login() {
                   onChange={e => setEmail(e.target.value)}
                   placeholder="you@example.com"
                   required
+                  autoComplete="email"
                   className="w-full bg-gray-800 border border-gray-700 text-white rounded-lg px-4 py-3 focus:outline-none focus:border-purple-500 transition"
                 />
               </div>
               <div>
-                <label className="block text-sm text-gray-400 mb-2">Password</label>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="text-sm text-gray-400">Password</label>
+                  <Link to="/forgot-password" className="text-xs text-purple-400 hover:text-purple-300 transition">
+                    Forgot password?
+                  </Link>
+                </div>
                 <input
                   type="password"
                   value={password}
                   onChange={e => setPassword(e.target.value)}
                   placeholder="Your password"
                   required
+                  autoComplete="current-password"
                   className="w-full bg-gray-800 border border-gray-700 text-white rounded-lg px-4 py-3 focus:outline-none focus:border-purple-500 transition"
                 />
               </div>

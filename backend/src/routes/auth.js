@@ -3,7 +3,7 @@ import jwt from 'jsonwebtoken'
 import crypto from 'crypto'
 import speakeasy from 'speakeasy'
 import User from '../models/User.js'
-import { sendVerificationEmail } from '../services/email.js'
+import { sendVerificationEmail, sendPasswordResetEmail } from '../services/email.js'
 
 const router = express.Router()
 
@@ -131,6 +131,57 @@ router.get('/verify/:token', async (req, res) => {
     res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:3000'}/login?verified=true`)
   } catch (err) {
     res.status(500).send('<h2>Something went wrong.</h2>')
+  }
+})
+
+// POST /api/auth/forgot-password
+router.post('/forgot-password', async (req, res) => {
+  try {
+    const { email } = req.body
+    if (!email) return res.status(400).json({ message: 'Email is required' })
+
+    const user = await User.findOne({ email: email.toLowerCase() })
+
+    // Always return success — don't reveal if email exists
+    if (!user) return res.json({ message: 'If that email exists, a reset link has been sent.' })
+
+    const token  = crypto.randomBytes(32).toString('hex')
+    const expiry = new Date(Date.now() + 60 * 60 * 1000) // 1 hour
+
+    await User.findByIdAndUpdate(user._id, {
+      resetPasswordToken:  token,
+      resetPasswordExpiry: expiry,
+    })
+
+    await sendPasswordResetEmail(email, token)
+    res.json({ message: 'If that email exists, a reset link has been sent.' })
+  } catch (err) {
+    res.status(500).json({ message: 'Server error' })
+  }
+})
+
+// POST /api/auth/reset-password
+router.post('/reset-password', async (req, res) => {
+  try {
+    const { token, newPassword } = req.body
+    if (!token || !newPassword) return res.status(400).json({ message: 'Token and new password are required' })
+    if (newPassword.length < 6) return res.status(400).json({ message: 'Password must be at least 6 characters' })
+
+    const user = await User.findOne({
+      resetPasswordToken:  token,
+      resetPasswordExpiry: { $gt: new Date() },
+    })
+
+    if (!user) return res.status(400).json({ message: 'Reset link is invalid or has expired' })
+
+    user.password            = newPassword
+    user.resetPasswordToken  = undefined
+    user.resetPasswordExpiry = undefined
+    await user.save()
+
+    res.json({ message: 'Password reset successfully. You can now log in.' })
+  } catch (err) {
+    res.status(500).json({ message: 'Server error' })
   }
 })
 

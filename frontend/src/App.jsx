@@ -7,6 +7,8 @@ import Dashboard from './pages/Dashboard'
 import Admin from './pages/Admin'
 import UseCases from './pages/UseCases'
 import UseCase from './pages/UseCase'
+import ForgotPassword from './pages/ForgotPassword'
+import ResetPassword from './pages/ResetPassword'
 
 function PrivateRoute({ children }) {
   const { user } = useAuth()
@@ -34,6 +36,8 @@ function AppRoutes() {
       } />
       <Route path="/use-cases" element={<UseCases />} />
       <Route path="/use-cases/:slug" element={<UseCase />} />
+      <Route path="/forgot-password" element={<ForgotPassword />} />
+      <Route path="/reset-password" element={<ResetPassword />} />
       <Route path="*" element={<Navigate to="/" />} />
     </Routes>
   )
