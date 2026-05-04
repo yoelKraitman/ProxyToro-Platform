@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '../context/AuthContext'
 import { useNavigate } from 'react-router-dom'
 import axios from 'axios'
@@ -208,6 +209,14 @@ export default function Dashboard() {
 
       {/* Page Content */}
       <div className="flex-1 max-w-6xl mx-auto w-full px-4 sm:px-6 py-6 sm:py-8">
+        <AnimatePresence mode="wait">
+        <motion.div
+          key={activeTab}
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -8 }}
+          transition={{ duration: 0.18, ease: 'easeOut' }}
+        >
 
         {/* ── DASHBOARD (Overview) ── */}
         {activeTab === 'Dashboard' && (
@@ -218,7 +227,7 @@ export default function Dashboard() {
             </div>
 
             {/* 4 Stat Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4" style={{ perspective: 800 }}>
 
               {/* Total Usage */}
               <div className="bg-gray-900 border border-gray-800 rounded-xl p-5">
@@ -873,6 +882,8 @@ export default function Dashboard() {
           <AccountTab user={user} profile={profile} />
         )}
 
+        </motion.div>
+        </AnimatePresence>
       </div>
 
       <Footer />
