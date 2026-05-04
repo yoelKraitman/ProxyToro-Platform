@@ -85,6 +85,8 @@ router.get('/test', authMiddleware, (req, res) => {
 
   const auth  = Buffer.from(`${username}:${password}`).toString('base64')
   const start = Date.now()
+  let responded = false
+  const reply = (status, body) => { if (!responded) { responded = true; res.status(status).json(body) } }
 
   const request = http.request({
     host,
@@ -101,27 +103,20 @@ router.get('/test', authMiddleware, (req, res) => {
     proxyRes.on('end', () => {
       try {
         const data = JSON.parse(body)
-        res.json({
-          success:    true,
-          ip:         data.ip,
-          statusCode: proxyRes.statusCode,
-          latencyMs:  Date.now() - start,
-          host,
-          port,
-        })
+        reply(200, { success: true, ip: data.ip, statusCode: proxyRes.statusCode, latencyMs: Date.now() - start, host, port })
       } catch {
-        res.status(502).json({ success: false, message: 'Bad response from proxy: ' + body })
+        reply(502, { success: false, message: 'Bad response from proxy: ' + body })
       }
     })
   })
 
   request.setTimeout(10000, () => {
     request.destroy()
-    res.status(504).json({ success: false, message: 'Proxy connection timed out' })
+    reply(504, { success: false, message: 'Proxy connection timed out' })
   })
 
   request.on('error', err => {
-    res.status(502).json({ success: false, message: err.message })
+    reply(502, { success: false, message: err.message })
   })
 
   request.end()

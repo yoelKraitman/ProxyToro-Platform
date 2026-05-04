@@ -227,7 +227,7 @@ export default function Dashboard() {
             </div>
 
             {/* 4 Stat Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4" style={{ perspective: 800 }}>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
 
               {/* Total Usage */}
               <div className="bg-gray-900 border border-gray-800 rounded-xl p-5">
@@ -898,8 +898,6 @@ function AccountTab({ user, profile }) {
   const [newPassword, setNewPassword] = useState('')
   const [pwMsg, setPwMsg] = useState('')
   const [pwLoading, setPwLoading] = useState(false)
-  const [credMsg, setCredMsg] = useState('')
-  const [credLoading, setCredLoading] = useState(false)
   const [deleteLoading, setDeleteLoading] = useState(false)
 
   const changePassword = async () => {
@@ -935,21 +933,6 @@ function AccountTab({ user, profile }) {
     }
   }
 
-  const resetCredentials = async () => {
-    setCredLoading(true)
-    setCredMsg('')
-    try {
-      const token = localStorage.getItem('token')
-      const res = await axios.post('/api/user/reset-credentials', {}, {
-        headers: { Authorization: `Bearer ${token}` }
-      })
-      setCredMsg({ type: 'success', text: `New username: ${res.data.proxyUsername}` })
-    } catch (err) {
-      setCredMsg({ type: 'error', text: 'Failed to reset credentials' })
-    } finally {
-      setCredLoading(false)
-    }
-  }
 
   return (
     <div className="space-y-6">

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { useNavigate } from 'react-router-dom'
 import axios from 'axios'
@@ -232,6 +232,7 @@ function UsersTab({ users, setUsers, loading, headers, exportCSV, fetchUsers, ad
   const [search, setSearch]                 = useState('')
   const [appliedSearch, setAppliedSearch]   = useState('')
   const [tableVisible, setTableVisible]     = useState(true)
+  const fadeTimer                           = useRef(null)
   const [selectedUser, setSelectedUser]     = useState(null)
   const [showPackageModal, setShowPackageModal] = useState(false)
   const [pkgEmail, setPkgEmail]             = useState('')
@@ -298,21 +299,6 @@ function UsersTab({ users, setUsers, loading, headers, exportCSV, fetchUsers, ad
     }
   }
 
-  // Optimistic reset: update proxyUsername in place from API response
-  const handleReset = async (userId, email) => {
-    setActionLoading(userId, 'reset', true)
-    try {
-      const res = await axios.post(`/api/admin/users/${userId}/reset-credentials`, {}, { headers })
-      setUsers(prev => prev.map(u =>
-        u._id === userId ? { ...u, proxyUsername: res.data.proxyUsername } : u
-      ))
-      addToast(`Credentials reset for ${email}`)
-    } catch {
-      addToast('Failed to reset credentials', 'error')
-    } finally {
-      setActionLoading(userId, 'reset', false)
-    }
-  }
 
   // Optimistic +GB: update bandwidthPurchased in place immediately
   const handleAddGb = async (userId, email) => {
@@ -519,7 +505,6 @@ function UsersTab({ users, setUsers, loading, headers, exportCSV, fetchUsers, ad
             type="text"
             value={search}
             onChange={e => { setSearch(e.target.value); setAppliedSearch('') }}
-            onBlur={() => setTimeout(() => setSearch(s => s), 150)}
             placeholder="Search by email or name..."
             className="w-full bg-gray-900 border border-gray-800 text-white rounded-xl pl-11 pr-4 py-3 focus:outline-none focus:border-purple-500 transition text-sm"
           />
@@ -540,7 +525,8 @@ function UsersTab({ users, setUsers, loading, headers, exportCSV, fetchUsers, ad
                 onMouseDown={() => {
                   setSearch(u.email)
                   setTableVisible(false)
-                  setTimeout(() => {
+                  clearTimeout(fadeTimer.current)
+                  fadeTimer.current = setTimeout(() => {
                     setAppliedSearch(u.email)
                     setTableVisible(true)
                   }, 180)
@@ -559,7 +545,8 @@ function UsersTab({ users, setUsers, loading, headers, exportCSV, fetchUsers, ad
           onClick={() => {
             setSearch('')
             setTableVisible(false)
-            setTimeout(() => { setAppliedSearch(''); setTableVisible(true) }, 180)
+            clearTimeout(fadeTimer.current)
+            fadeTimer.current = setTimeout(() => { setAppliedSearch(''); setTableVisible(true) }, 180)
           }}
           className="bg-purple-600 hover:bg-purple-700 text-white text-sm font-semibold px-6 py-3 rounded-xl transition"
         >
