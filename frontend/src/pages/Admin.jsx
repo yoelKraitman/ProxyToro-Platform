@@ -230,6 +230,7 @@ export default function Admin() {
 // ── USERS TAB ──
 function UsersTab({ users, setUsers, loading, headers, exportCSV, fetchUsers, addToast }) {
   const [search, setSearch]                 = useState('')
+  const [searchOpen, setSearchOpen]         = useState(false)
   const [appliedSearch, setAppliedSearch]   = useState('')
   const [tableVisible, setTableVisible]     = useState(true)
   const fadeTimer                           = useRef(null)
@@ -326,7 +327,7 @@ function UsersTab({ users, setUsers, loading, headers, exportCSV, fetchUsers, ad
     }
   }
 
-  const suggestions = search.trim()
+  const suggestions = search.trim() && searchOpen
     ? users.filter(u => u.email.toLowerCase().includes(search.toLowerCase()))
     : []
 
@@ -572,7 +573,9 @@ function UsersTab({ users, setUsers, loading, headers, exportCSV, fetchUsers, ad
           <input
             type="text"
             value={search}
-            onChange={e => { setSearch(e.target.value); setAppliedSearch('') }}
+            onChange={e => { setSearch(e.target.value); setAppliedSearch(''); setSearchOpen(true) }}
+            onFocus={() => setSearchOpen(true)}
+            onBlur={() => setTimeout(() => setSearchOpen(false), 150)}
             placeholder="Search by email or name..."
             className="w-full bg-gray-900 border border-gray-800 text-white rounded-xl pl-11 pr-4 py-3 focus:outline-none focus:border-purple-500 transition text-sm"
           />
@@ -592,6 +595,7 @@ function UsersTab({ users, setUsers, loading, headers, exportCSV, fetchUsers, ad
                 key={u._id}
                 onMouseDown={() => {
                   setSearch(u.email)
+                  setSearchOpen(false)
                   setTableVisible(false)
                   clearTimeout(fadeTimer.current)
                   fadeTimer.current = setTimeout(() => {
