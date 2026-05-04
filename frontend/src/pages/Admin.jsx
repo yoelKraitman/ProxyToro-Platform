@@ -234,6 +234,8 @@ function UsersTab({ users, setUsers, loading, headers, exportCSV, fetchUsers, ad
   const [tableVisible, setTableVisible]     = useState(true)
   const fadeTimer                           = useRef(null)
   const [selectedUser, setSelectedUser]     = useState(null)
+  const [userLogs, setUserLogs]             = useState(null)
+  const [logsLoading, setLogsLoading]       = useState(false)
   const [showPackageModal, setShowPackageModal] = useState(false)
   const [pkgEmail, setPkgEmail]             = useState('')
   const [pkgGb, setPkgGb]                   = useState(10)
@@ -363,7 +365,7 @@ function UsersTab({ users, setUsers, loading, headers, exportCSV, fetchUsers, ad
           <div className="bg-gray-900 border border-gray-800 rounded-2xl p-8 w-full max-w-md shadow-2xl">
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-xl font-bold">User Details</h3>
-              <button onClick={() => setSelectedUser(null)} className="text-gray-500 hover:text-white transition text-2xl leading-none">×</button>
+              <button onClick={() => { setSelectedUser(null); setUserLogs(null) }} className="text-gray-500 hover:text-white transition text-2xl leading-none">×</button>
             </div>
             <div className="space-y-4">
               <div>
@@ -392,12 +394,42 @@ function UsersTab({ users, setUsers, loading, headers, exportCSV, fetchUsers, ad
                   {selectedUser.isDisabled ? 'Enable' : 'Disable'}
                 </button>
               </div>
-              <button className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-xl transition flex items-center justify-center gap-2">
+              <button
+                onClick={async () => {
+                  setLogsLoading(true)
+                  setUserLogs(null)
+                  try {
+                    const res = await axios.get(`/api/admin/users/${selectedUser._id}/logs`, { headers })
+                    setUserLogs(res.data.logs)
+                  } catch { setUserLogs([]) }
+                  finally { setLogsLoading(false) }
+                }}
+                disabled={logsLoading}
+                className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-semibold py-3 rounded-xl transition flex items-center justify-center gap-2"
+              >
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4">
                   <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
                 </svg>
-                View User Logs
+                {logsLoading ? 'Loading...' : 'View User Logs'}
               </button>
+
+              {/* Logs output */}
+              {userLogs && (
+                <div className="mt-2 bg-gray-800 rounded-xl overflow-hidden max-h-48 overflow-y-auto">
+                  {userLogs.length === 0
+                    ? <p className="text-gray-500 text-xs p-4">No logs yet.</p>
+                    : userLogs.map((log, i) => (
+                      <div key={i} className="flex items-center justify-between px-4 py-2.5 border-b border-gray-700 text-xs">
+                        <span className="text-gray-400 font-mono truncate">{log.endpoint}</span>
+                        <div className="flex items-center gap-3 shrink-0 ml-3">
+                          <span className={log.status_code === 200 ? 'text-green-400' : 'text-red-400'}>{log.status_code}</span>
+                          <span className="text-gray-500">{log.kb_used} KB</span>
+                        </div>
+                      </div>
+                    ))
+                  }
+                </div>
+              )}
               <div className="grid grid-cols-2 gap-4 pt-1">
                 <div>
                   <p className="text-xs text-gray-500 mb-0.5">Created</p>

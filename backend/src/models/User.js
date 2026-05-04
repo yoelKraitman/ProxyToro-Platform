@@ -66,6 +66,9 @@ const userSchema = new mongoose.Schema({
     type: Boolean,
     default: false,
   },
+  globedataId:       { type: String }, // GlobeData sub-user UUID
+  globedataUsername: { type: String }, // e.g. sub_8j6hVeUj
+  globedataPassword: { type: String }, // unique proxy password
   isDisabled: { type: Boolean, default: false },
   lastLogin: { type: Date },
   createdAt: {

@@ -5,10 +5,10 @@ import User from '../models/User.js'
 
 const router = express.Router()
 
-const GLOBEDATA_HOST = process.env.PROXY_HOST || 'gate.proxytoro.com'
-const GLOBEDATA_PORT = process.env.PROXY_PORT || '8080'
+const HOST = process.env.PROXY_HOST || 'gate.proxytoro.com'
+const PORT = process.env.PROXY_PORT || '8080'
 
-// GET /api/proxy/list?country=US&state=california&city=losangeles&type=rotating&count=5&protocol=http
+// GET /api/proxy/list
 router.get('/list', authMiddleware, async (req, res) => {
   try {
     const {
@@ -20,48 +20,40 @@ router.get('/list', authMiddleware, async (req, res) => {
       protocol = 'http',
     } = req.query
 
-    const baseUsername = process.env.GLOBEDATA_USERNAME
-    const password     = process.env.GLOBEDATA_PASSWORD
+    const user = await User.findById(req.user.id)
 
-    if (!baseUsername || !password) {
-      return res.status(500).json({ message: 'Proxy credentials not configured on server.' })
-    }
+    // Use this user's own GlobeData credentials if they have them,
+    // otherwise fall back to the shared account credentials
+    const baseUsername = user.globedataUsername || process.env.GLOBEDATA_USERNAME
+    const password     = user.globedataPassword || process.env.GLOBEDATA_PASSWORD
 
-    // For rotating proxies every string is identical — just return 1
-    // For sticky each one gets a unique session ID — return up to 100
+    if (!baseUsername || !password)
+      return res.status(500).json({ message: 'Proxy credentials not configured.' })
+
     const isSticky = type === 'sticky'
-    const num = isSticky ? Math.min(parseInt(count) || 1, 100) : 1
-
-    const proxies = []
+    const num      = isSticky ? Math.min(parseInt(count) || 1, 100) : 1
+    const proxies  = []
 
     for (let i = 0; i < num; i++) {
       let username = baseUsername
 
-      // Append location targeting to username
       if (country) username += `-country-${country.toUpperCase()}`
       if (state)   username += `-state-${state.toLowerCase().replace(/\s+/g, '')}`
       if (city)    username += `-city-${city.toLowerCase().replace(/\s+/g, '')}`
 
-      // Sticky session gets a unique ID so each connection locks to a different IP
-      if (isSticky) {
-        const sessionId = Math.random().toString(36).substring(2, 10)
-        username += `-session-${sessionId}`
-      }
+      if (isSticky) username += `-session-${Math.random().toString(36).substring(2, 10)}`
 
       proxies.push({
-        host:      GLOBEDATA_HOST,
-        port:      GLOBEDATA_PORT,
+        host:      HOST,
+        port:      PORT,
         username,
         password,
         protocol,
-        // Standard format:  host:port:user:pass
-        formatted: `${GLOBEDATA_HOST}:${GLOBEDATA_PORT}:${username}:${password}`,
-        // URL format for curl / browsers:  protocol://user:pass@host:port
-        curl:      `${protocol}://${username}:${password}@${GLOBEDATA_HOST}:${GLOBEDATA_PORT}`,
+        formatted: `${HOST}:${PORT}:${username}:${password}`,
+        curl:      `${protocol}://${username}:${password}@${HOST}:${PORT}`,
       })
     }
 
-    // Track usage
     await User.findByIdAndUpdate(req.user.id, {
       $inc: { 'usage.proxiesGenerated': proxies.length },
       $set: { 'usage.lastActive': new Date() },
@@ -73,17 +65,19 @@ router.get('/list', authMiddleware, async (req, res) => {
   }
 })
 
-// GET /api/proxy/test — send a real request through GlobeData and return IP + status
-router.get('/test', authMiddleware, (req, res) => {
+// GET /api/proxy/test — send a real request through the proxy and return IP + status
+router.get('/test', authMiddleware, async (req, res) => {
+  const user = await User.findById(req.user.id)
+
   const host     = process.env.PROXY_HOST || 'gate.proxytoro.com'
   const port     = parseInt(process.env.PROXY_PORT || '8080')
-  const username = process.env.GLOBEDATA_USERNAME
-  const password = process.env.GLOBEDATA_PASSWORD
+  const username = user.globedataUsername || process.env.GLOBEDATA_USERNAME
+  const password = user.globedataPassword || process.env.GLOBEDATA_PASSWORD
 
   if (!username || !password)
-    return res.status(500).json({ message: 'Proxy credentials not configured on server.' })
+    return res.status(500).json({ message: 'Proxy credentials not configured.' })
 
-  const auth  = Buffer.from(`${username}:${password}`).toString('base64')
+  const auth = Buffer.from(`${username}:${password}`).toString('base64')
   const start = Date.now()
   let responded = false
   const reply = (status, body) => { if (!responded) { responded = true; res.status(status).json(body) } }
@@ -92,10 +86,10 @@ router.get('/test', authMiddleware, (req, res) => {
     host,
     port,
     method: 'GET',
-    path: 'http://api.ipify.org/?format=json',
+    path:   'http://api.ipify.org/?format=json',
     headers: {
-      'Host': 'api.ipify.org',
-      'Proxy-Authorization': `Basic ${auth}`,
+      'Host':                 'api.ipify.org',
+      'Proxy-Authorization':  `Basic ${auth}`,
     },
   }, (proxyRes) => {
     let body = ''
@@ -110,15 +104,8 @@ router.get('/test', authMiddleware, (req, res) => {
     })
   })
 
-  request.setTimeout(10000, () => {
-    request.destroy()
-    reply(504, { success: false, message: 'Proxy connection timed out' })
-  })
-
-  request.on('error', err => {
-    reply(502, { success: false, message: err.message })
-  })
-
+  request.setTimeout(10000, () => { request.destroy(); reply(504, { success: false, message: 'Proxy connection timed out' }) })
+  request.on('error', err => reply(502, { success: false, message: err.message }))
   request.end()
 })
 
