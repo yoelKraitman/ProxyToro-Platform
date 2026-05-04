@@ -238,6 +238,7 @@ function UsersTab({ users, setUsers, loading, headers, exportCSV, fetchUsers, ad
   const [logsLoading, setLogsLoading]       = useState(false)
   const [showPackageModal, setShowPackageModal] = useState(false)
   const [pkgEmail, setPkgEmail]             = useState('')
+  const [pkgEmailOpen, setPkgEmailOpen]     = useState(false)
   const [pkgGb, setPkgGb]                   = useState(10)
   const [pkgDays, setPkgDays]               = useState(365)
   const [pkgLoading, setPkgLoading]         = useState(false)
@@ -480,14 +481,16 @@ function UsersTab({ users, setUsers, loading, headers, exportCSV, fetchUsers, ad
                 <input
                   type="email"
                   value={pkgEmail}
-                  onChange={e => setPkgEmail(e.target.value)}
+                  onChange={e => { setPkgEmail(e.target.value); setPkgEmailOpen(true) }}
+                  onFocus={() => setPkgEmailOpen(true)}
+                  onBlur={() => setTimeout(() => setPkgEmailOpen(false), 150)}
                   placeholder="user@example.com"
                   autoFocus
                   className="w-full bg-gray-800 border border-gray-700 focus:border-purple-500 text-white rounded-xl px-4 py-3 focus:outline-none transition"
                 />
                 {/* Autocomplete dropdown */}
                 {(() => {
-                  const matches = pkgEmail.trim()
+                  const matches = pkgEmail.trim() && pkgEmailOpen
                     ? users.filter(u => u.email.toLowerCase().includes(pkgEmail.toLowerCase()))
                     : []
                   return (
@@ -506,7 +509,7 @@ function UsersTab({ users, setUsers, loading, headers, exportCSV, fetchUsers, ad
                         <button
                           key={u._id}
                           type="button"
-                          onMouseDown={() => setPkgEmail(u.email)}
+                          onMouseDown={() => { setPkgEmail(u.email); setPkgEmailOpen(false) }}
                           className="w-full text-left px-4 py-3 text-sm text-gray-300 hover:bg-gray-700 hover:text-white transition-colors flex items-center gap-3"
                         >
                           <div className="w-7 h-7 rounded-full bg-purple-600/20 flex items-center justify-center shrink-0 text-xs text-purple-400 font-bold">
