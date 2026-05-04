@@ -475,7 +475,7 @@ function UsersTab({ users, setUsers, loading, headers, exportCSV, fetchUsers, ad
               <button onClick={() => setShowPackageModal(false)} className="text-gray-500 hover:text-white transition text-2xl leading-none">×</button>
             </div>
             <div className="space-y-5">
-              <div>
+              <div className="relative">
                 <label className="block text-sm text-gray-400 mb-2">User Email</label>
                 <input
                   type="email"
@@ -485,6 +485,39 @@ function UsersTab({ users, setUsers, loading, headers, exportCSV, fetchUsers, ad
                   autoFocus
                   className="w-full bg-gray-800 border border-gray-700 focus:border-purple-500 text-white rounded-xl px-4 py-3 focus:outline-none transition"
                 />
+                {/* Autocomplete dropdown */}
+                {(() => {
+                  const matches = pkgEmail.trim()
+                    ? users.filter(u => u.email.toLowerCase().includes(pkgEmail.toLowerCase()))
+                    : []
+                  return (
+                    <div
+                      className="absolute left-0 right-0 bg-gray-800 border border-gray-700 rounded-xl overflow-hidden overflow-y-auto shadow-2xl z-10"
+                      style={{
+                        top: '100%',
+                        maxHeight: matches.length > 0 ? '160px' : '0px',
+                        opacity:   matches.length > 0 ? 1 : 0,
+                        transform: matches.length > 0 ? 'translateY(4px)' : 'translateY(-4px)',
+                        pointerEvents: matches.length > 0 ? 'auto' : 'none',
+                        transition: 'max-height 200ms ease, opacity 180ms ease, transform 180ms ease',
+                      }}
+                    >
+                      {matches.slice(0, 6).map(u => (
+                        <button
+                          key={u._id}
+                          type="button"
+                          onMouseDown={() => setPkgEmail(u.email)}
+                          className="w-full text-left px-4 py-3 text-sm text-gray-300 hover:bg-gray-700 hover:text-white transition-colors flex items-center gap-3"
+                        >
+                          <div className="w-7 h-7 rounded-full bg-purple-600/20 flex items-center justify-center shrink-0 text-xs text-purple-400 font-bold">
+                            {u.email[0].toUpperCase()}
+                          </div>
+                          <span>{u.email}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )
+                })()}
               </div>
               <div>
                 <label className="block text-sm text-gray-400 mb-2">GB Amount</label>
