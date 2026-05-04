@@ -509,7 +509,8 @@ function UsersTab({ users, setUsers, loading, headers, exportCSV, fetchUsers, ad
                         <button
                           key={u._id}
                           type="button"
-                          onMouseDown={() => { setPkgEmail(u.email); setPkgEmailOpen(false) }}
+                          onMouseDown={e => e.preventDefault()}
+                          onClick={() => { setPkgEmail(u.email); setPkgEmailOpen(false) }}
                           className="w-full text-left px-4 py-3 text-sm text-gray-300 hover:bg-gray-700 hover:text-white transition-colors flex items-center gap-3"
                         >
                           <div className="w-7 h-7 rounded-full bg-purple-600/20 flex items-center justify-center shrink-0 text-xs text-purple-400 font-bold">
@@ -591,7 +592,8 @@ function UsersTab({ users, setUsers, loading, headers, exportCSV, fetchUsers, ad
             {suggestions.slice(0, 8).map(u => (
               <button
                 key={u._id}
-                onMouseDown={() => {
+                onMouseDown={e => e.preventDefault()}
+                onClick={() => {
                   setSearch(u.email)
                   setSearchOpen(false)
                   setTableVisible(false)
