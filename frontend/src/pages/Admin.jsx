@@ -483,7 +483,6 @@ function UsersTab({ users, setUsers, loading, headers, exportCSV, fetchUsers, ad
                   type="email"
                   value={pkgEmail}
                   onChange={e => { setPkgEmail(e.target.value); setPkgEmailOpen(true) }}
-                  onFocus={() => setPkgEmailOpen(true)}
                   onBlur={() => setTimeout(() => setPkgEmailOpen(false), 150)}
                   placeholder="user@example.com"
                   autoFocus
@@ -574,7 +573,6 @@ function UsersTab({ users, setUsers, loading, headers, exportCSV, fetchUsers, ad
             type="text"
             value={search}
             onChange={e => { setSearch(e.target.value); setAppliedSearch(''); setSearchOpen(true) }}
-            onFocus={() => setSearchOpen(true)}
             onBlur={() => setTimeout(() => setSearchOpen(false), 150)}
             placeholder="Search by email or name..."
             className="w-full bg-gray-900 border border-gray-800 text-white rounded-xl pl-11 pr-4 py-3 focus:outline-none focus:border-purple-500 transition text-sm"
