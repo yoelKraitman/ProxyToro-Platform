@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import axios from 'axios'
 import { useAuth } from '../context/AuthContext'
 
 export default function VerifySuccess() {
@@ -9,18 +8,8 @@ export default function VerifySuccess() {
   const [countdown, setCountdown] = useState(3)
 
   useEffect(() => {
-    const finalize = async () => {
-      try {
-        const token = localStorage.getItem('token')
-        if (token) {
-          const res = await axios.get('/api/user/me', {
-            headers: { Authorization: `Bearer ${token}` }
-          })
-          if (res.data.isVerified) updateUser({ isVerified: true })
-        }
-      } catch {}
-    }
-    finalize()
+    // Backend already verified the user — update localStorage immediately
+    updateUser({ isVerified: true })
 
     const timer = setInterval(() => {
       setCountdown(c => {
