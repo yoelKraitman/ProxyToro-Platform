@@ -69,13 +69,16 @@ router.get('/list', authMiddleware, async (req, res) => {
 router.get('/test', authMiddleware, async (req, res) => {
   const user = await User.findById(req.user.id)
 
-  const host     = process.env.PROXY_HOST || 'gate.proxytoro.com'
-  const port     = parseInt(process.env.PROXY_PORT || '8080')
-  const username = user.globedataUsername || process.env.GLOBEDATA_USERNAME
-  const password = user.globedataPassword || process.env.GLOBEDATA_PASSWORD
+  const host        = process.env.PROXY_HOST || 'gate.proxytoro.com'
+  const port        = parseInt(process.env.PROXY_PORT || '8080')
+  const baseUsername = user.globedataUsername || process.env.GLOBEDATA_USERNAME
+  const password     = user.globedataPassword || process.env.GLOBEDATA_PASSWORD
 
-  if (!username || !password)
+  if (!baseUsername || !password)
     return res.status(500).json({ message: 'Proxy credentials not configured.' })
+
+  const { country = '' } = req.query
+  const username = country ? `${baseUsername}-country-${country.toUpperCase()}` : baseUsername
 
   const auth = Buffer.from(`${username}:${password}`).toString('base64')
   const start = Date.now()

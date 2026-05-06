@@ -89,7 +89,8 @@ export default function Dashboard() {
     setTestResult(null)
     try {
       const token = localStorage.getItem('token')
-      const res = await axios.get('/api/proxy/test', {
+      const params = proxyCountry ? `?country=${proxyCountry}` : ''
+      const res = await axios.get(`/api/proxy/test${params}`, {
         headers: { Authorization: `Bearer ${token}` }
       })
       setTestResult({ success: true, ...res.data })
