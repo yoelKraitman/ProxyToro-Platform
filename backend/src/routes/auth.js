@@ -38,7 +38,7 @@ router.post('/register', async (req, res) => {
 
     // Create GlobeData sub-user (don't block registration if it fails)
     try {
-      const sub = await createSubuser({ email, gb: 0, label: email })
+      const sub = await createSubuser({ email, gb: 0.01, label: email })
       if (sub) {
         await User.findByIdAndUpdate(user._id, {
           globedataId:       sub.id,
@@ -141,7 +141,10 @@ router.post('/2fa-login', async (req, res) => {
 // GET /api/auth/verify/:token — user clicks the link in their email
 router.get('/verify/:token', async (req, res) => {
   try {
-    const user = await User.findOne({ verificationToken: req.params.token })
+    const token = req.params.token
+    console.log('[verify] token received:', token)
+    const user = await User.findOne({ verificationToken: token })
+    console.log('[verify] user found:', user ? user.email : 'NOT FOUND')
 
     if (!user)
       return res.status(400).send('<h2>Invalid or expired verification link.</h2>')
