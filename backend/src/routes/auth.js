@@ -126,7 +126,8 @@ router.post('/2fa-login', async (req, res) => {
 // GET /api/auth/verify/:token — user clicks the link in their email
 router.get('/verify/:token', async (req, res) => {
   const base = (process.env.FRONTEND_URL || 'http://localhost:3000').replace(/\/+$/, '')
-  let loginUrl = `${base}/login?verified=true`
+  const dashboardUrl = `${base}/dashboard`
+  let verifiedEmail = ''
   try {
     const user = await User.findOne({ verificationToken: req.params.token })
     if (user) {
@@ -134,7 +135,7 @@ router.get('/verify/:token', async (req, res) => {
         user.isVerified = true
         await user.save()
       }
-      loginUrl = `${base}/login?verified=true&email=${encodeURIComponent(user.email)}`
+      verifiedEmail = user.email
     }
   } catch (err) {
     console.error('Verify error:', err.message)
@@ -143,7 +144,6 @@ router.get('/verify/:token', async (req, res) => {
 <html>
 <head>
   <meta charset="utf-8">
-  <meta http-equiv="refresh" content="2; url=${loginUrl}">
   <title>Email Verified</title>
   <style>
     body { font-family: sans-serif; background: #030712; color: white; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; text-align: center; }
@@ -155,9 +155,19 @@ router.get('/verify/:token', async (req, res) => {
   <div>
     <h1>ProxyToro</h1>
     <h2>✓ Email verified!</h2>
-    <p>Redirecting you to login...</p>
-    <a href="${loginUrl}">Go to Login</a>
+    <p>Taking you to your dashboard...</p>
+    <a href="${dashboardUrl}">Go to Dashboard</a>
   </div>
+  <script>
+    try {
+      const u = JSON.parse(localStorage.getItem('user') || 'null')
+      if (u && u.email === '${verifiedEmail}') {
+        u.isVerified = true
+        localStorage.setItem('user', JSON.stringify(u))
+      }
+    } catch(e) {}
+    setTimeout(() => { window.location.href = '${dashboardUrl}' }, 1500)
+  </script>
 </body>
 </html>`)
 })

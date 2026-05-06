@@ -16,19 +16,10 @@ export default function Login() {
   const [userId, setUserId] = useState(null)
   const [twoFACode, setTwoFACode] = useState('')
 
-  const { login, logout } = useAuth()
+  const { login } = useAuth()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const justVerified = searchParams.get('verified') === 'true'
-  const verifiedEmail = searchParams.get('email') || ''
-
-  // Pre-fill email and log out any stale session when arriving from verification link
-  useEffect(() => {
-    if (justVerified && verifiedEmail) {
-      logout()
-      setEmail(verifiedEmail)
-    }
-  }, [])
 
   // Pre-ping the server on mount so it wakes up before the user tries to login
   useEffect(() => {
