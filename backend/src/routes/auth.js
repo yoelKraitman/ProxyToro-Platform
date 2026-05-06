@@ -125,14 +125,14 @@ router.post('/2fa-login', async (req, res) => {
 
 // GET /api/auth/verify/:token — user clicks the link in their email
 router.get('/verify/:token', async (req, res) => {
-  const loginUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/login?verified=true`
+  const base = (process.env.FRONTEND_URL || 'http://localhost:3000').replace(/\/+$/, '')
+  const loginUrl = `${base}/login?verified=true`
   try {
     const user = await User.findOne({ verificationToken: req.params.token })
     if (user && !user.isVerified) {
       user.isVerified = true
       await user.save()
     }
-    // Always redirect to login — handles Gmail pre-fetch consuming the link
     res.redirect(loginUrl)
   } catch (err) {
     res.redirect(loginUrl)
