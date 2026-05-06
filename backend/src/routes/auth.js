@@ -157,6 +157,31 @@ router.get('/verify/:token', async (req, res) => {
   }
 })
 
+// POST /api/auth/resend-verification — resend the verification email
+router.post('/resend-verification', async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization
+    if (!authHeader) return res.status(401).json({ message: 'Unauthorized' })
+    const { id } = (await import('jsonwebtoken')).default.verify(
+      authHeader.replace('Bearer ', ''),
+      process.env.JWT_SECRET
+    )
+    const user = await User.findById(id)
+    if (!user) return res.status(404).json({ message: 'User not found' })
+    if (user.isVerified) return res.status(400).json({ message: 'Email already verified' })
+
+    if (!user.verificationToken) {
+      user.verificationToken = crypto.randomBytes(32).toString('hex')
+      await user.save()
+    }
+
+    await sendVerificationEmail(user.email, user.verificationToken)
+    res.json({ message: 'Verification email sent' })
+  } catch (err) {
+    res.status(500).json({ message: 'Server error' })
+  }
+})
+
 // POST /api/auth/forgot-password
 router.post('/forgot-password', async (req, res) => {
   try {

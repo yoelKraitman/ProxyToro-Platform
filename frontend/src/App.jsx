@@ -10,11 +10,19 @@ import UseCase from './pages/UseCase'
 import ForgotPassword from './pages/ForgotPassword'
 import ResetPassword from './pages/ResetPassword'
 import Setup2FA from './pages/Setup2FA'
+import VerifyEmail from './pages/VerifyEmail'
 
 function PrivateRoute({ children }) {
   const { user } = useAuth()
   if (!user) return <Navigate to="/login" />
-  if (!user.twoFactorEnabled) return <Navigate to="/setup-2fa" />
+  if (!user.isVerified) return <Navigate to="/verify-email" />
+  return children
+}
+
+function VerifyEmailRoute({ children }) {
+  const { user } = useAuth()
+  if (!user) return <Navigate to="/login" />
+  if (user.isVerified) return <Navigate to="/dashboard" />
   return children
 }
 
@@ -28,7 +36,7 @@ function Setup2FARoute({ children }) {
 function AdminRoute({ children }) {
   const { user } = useAuth()
   if (!user) return <Navigate to="/login" />
-  if (!user.twoFactorEnabled) return <Navigate to="/setup-2fa" />
+  if (!user.isVerified) return <Navigate to="/verify-email" />
   if (user.role !== 'admin') return <Navigate to="/dashboard" />
   return children
 }
@@ -39,6 +47,9 @@ function AppRoutes() {
       <Route path="/" element={<Landing />} />
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
+      <Route path="/verify-email" element={
+        <VerifyEmailRoute><VerifyEmail /></VerifyEmailRoute>
+      } />
       <Route path="/setup-2fa" element={
         <Setup2FARoute><Setup2FA /></Setup2FARoute>
       } />
