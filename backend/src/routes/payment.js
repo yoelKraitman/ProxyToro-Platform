@@ -1,7 +1,7 @@
 import express from 'express'
 import { authMiddleware } from '../middleware/auth.js'
 import User from '../models/User.js'
-import { allocateGb } from '../services/globedata.js'
+import { allocateGb, createSubuser } from '../services/globedata.js'
 
 const router = express.Router()
 
@@ -75,13 +75,24 @@ router.post('/webhook', express.json(), async (req, res) => {
           }
         })
 
-        // Allocate purchased GB to the user's GlobeData sub-user
-        if (user.globedataId) {
-          try {
+        // GlobeData: create sub-user on first payment, allocate GB on repeat payments
+        try {
+          if (user.globedataId) {
             await allocateGb(user.globedataId, gb)
-          } catch (gdErr) {
-            console.error('GlobeData GB allocation failed:', gdErr.message)
+          } else {
+            const sub = await createSubuser({ email: user.email, gb, label: user.email })
+            if (sub) {
+              await User.findByIdAndUpdate(userId, {
+                $set: {
+                  globedataId:       sub.id,
+                  globedataUsername: sub.proxy_username,
+                  globedataPassword: sub.proxy_password,
+                }
+              })
+            }
           }
+        } catch (gdErr) {
+          console.error('GlobeData error on payment:', gdErr.message)
         }
       }
     }
