@@ -6,7 +6,7 @@ export async function sendVerificationEmail(email, token) {
   const verifyUrl = `${process.env.BACKEND_URL}/api/auth/verify/${token}`
 
   await resend.emails.send({
-    from: 'ProxyToro <noreply@proxytoro.com>',
+    from: 'ProxyToro <support@proxytoro.com>',
     to: email,
     subject: 'Verify your ProxyToro account',
     html: `
@@ -32,7 +32,7 @@ export async function sendPasswordResetEmail(email, token) {
   const resetUrl = `${process.env.FRONTEND_URL}/reset-password?token=${token}`
 
   await resend.emails.send({
-    from: 'ProxyToro <noreply@proxytoro.com>',
+    from: 'ProxyToro <support@proxytoro.com>',
     to: email,
     subject: 'Reset your ProxyToro password',
     html: `
