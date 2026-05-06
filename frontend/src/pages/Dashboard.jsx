@@ -6,6 +6,7 @@ import axios from 'axios'
 import OTPInput from '../components/OTPInput'
 import Footer from '../components/Footer'
 import PricingCalculator from '../components/PricingCalculator'
+import { COUNTRIES, CITIES } from '../data/proxyLocations'
 
 const TABS = [
   { label: 'Dashboard', icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> },
@@ -14,23 +15,6 @@ const TABS = [
   { label: 'Usage', icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg> },
   { label: 'Become an Affiliate', icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg> },
   { label: 'Account', icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg> },
-]
-
-const COUNTRIES = [
-  { value: '',   label: 'Any Country (Rotating)' },
-  { value: 'US', label: 'United States' },
-  { value: 'GB', label: 'United Kingdom' },
-  { value: 'DE', label: 'Germany' },
-  { value: 'FR', label: 'France' },
-  { value: 'ES', label: 'Spain' },
-  { value: 'CA', label: 'Canada' },
-  { value: 'AU', label: 'Australia' },
-  { value: 'IL', label: 'Israel' },
-  { value: 'JP', label: 'Japan' },
-  { value: 'BR', label: 'Brazil' },
-  { value: 'IN', label: 'India' },
-  { value: 'NL', label: 'Netherlands' },
-  { value: 'SG', label: 'Singapore' },
 ]
 
 const NAV_LINKS = [
@@ -76,8 +60,15 @@ export default function Dashboard() {
     document.addEventListener('mousedown', handler)
     return () => document.removeEventListener('mousedown', handler)
   }, [])
-  const [proxyState, setProxyState] = useState('')
   const [proxyCity, setProxyCity] = useState('')
+  const [cityOpen, setCityOpen] = useState(false)
+  const cityRef = useRef(null)
+  useEffect(() => {
+    const handler = (e) => { if (cityRef.current && !cityRef.current.contains(e.target)) setCityOpen(false) }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [])
+  const availableCities = CITIES[proxyCountry] || []
   const [proxyCount, setProxyCount] = useState(10)
   const [proxySticky, setProxySticky] = useState(false)
   const [proxies, setProxies] = useState([])
@@ -94,8 +85,7 @@ export default function Dashboard() {
         country: proxyCountry,
         type: proxySticky ? 'sticky' : 'rotating',
         count: proxySticky ? proxyCount : 1,
-        ...(proxyState && { state: proxyState }),
-        ...(proxyCity  && { city:  proxyCity  }),
+        ...(proxyCity && { city: proxyCity }),
       })
       const res = await axios.get(`/api/proxy/list?${params}`, {
         headers: { Authorization: `Bearer ${token}` }
@@ -505,7 +495,7 @@ export default function Dashboard() {
                       <button
                         key={c.value}
                         type="button"
-                        onClick={() => { setProxyCountry(c.value); setCountryOpen(false) }}
+                        onClick={() => { setProxyCountry(c.value); setCountryOpen(false); setProxyCity('') }}
                         className={`w-full text-left px-4 py-2.5 text-sm transition hover:bg-gray-700 hover:text-purple-400
                           ${proxyCountry === c.value ? 'text-purple-400 bg-gray-700/50' : 'text-white'}`}
                       >
@@ -516,29 +506,59 @@ export default function Dashboard() {
                 </div>
               </div>
 
-              {/* State & City */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm text-gray-400 mb-2">State <span className="text-gray-600">(optional)</span></label>
-                  <input
-                    type="text"
-                    value={proxyState}
-                    onChange={e => setProxyState(e.target.value)}
-                    placeholder="e.g. california"
-                    className="w-full bg-gray-800 border border-gray-700 text-white rounded-lg px-4 py-3 focus:outline-none focus:border-purple-500"
-                  />
-                </div>
-                <div>
+              {/* City */}
+              {availableCities.length > 0 && (
+                <div ref={cityRef} className="relative">
                   <label className="block text-sm text-gray-400 mb-2">City <span className="text-gray-600">(optional)</span></label>
-                  <input
-                    type="text"
-                    value={proxyCity}
-                    onChange={e => setProxyCity(e.target.value)}
-                    placeholder="e.g. losangeles"
-                    className="w-full bg-gray-800 border border-gray-700 text-white rounded-lg px-4 py-3 focus:outline-none focus:border-purple-500"
-                  />
+                  <button
+                    type="button"
+                    onClick={() => setCityOpen(v => !v)}
+                    className="w-full bg-gray-800 border border-gray-700 text-white rounded-lg px-4 py-3 flex items-center justify-between focus:outline-none focus:border-purple-500 transition hover:border-gray-600"
+                  >
+                    <span className={proxyCity ? 'text-white' : 'text-gray-500'}>
+                      {proxyCity
+                        ? availableCities.find(c => c.value === proxyCity)?.label || proxyCity
+                        : 'Any City (Rotating)'}
+                    </span>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+                      className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${cityOpen ? 'rotate-180' : ''}`}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5"/>
+                    </svg>
+                  </button>
+                  <div
+                    className="absolute z-20 left-0 right-0 mt-1 bg-gray-800 border border-gray-700 rounded-xl overflow-hidden shadow-2xl"
+                    style={{
+                      maxHeight: cityOpen ? '260px' : '0px',
+                      opacity: cityOpen ? 1 : 0,
+                      overflow: 'hidden',
+                      transition: 'max-height 220ms ease, opacity 180ms ease',
+                      pointerEvents: cityOpen ? 'auto' : 'none',
+                    }}
+                  >
+                    <div className="overflow-y-auto max-h-64">
+                      <button
+                        type="button"
+                        onClick={() => { setProxyCity(''); setCityOpen(false) }}
+                        className={`w-full text-left px-4 py-2.5 text-sm transition hover:bg-gray-700 hover:text-purple-400
+                          ${proxyCity === '' ? 'text-purple-400 bg-gray-700/50' : 'text-gray-400'}`}
+                      >
+                        Any City (Rotating)
+                      </button>
+                      {availableCities.map(c => (
+                        <button
+                          key={c.value}
+                          type="button"
+                          onClick={() => { setProxyCity(c.value); setCityOpen(false) }}
+                          className={`w-full text-left px-4 py-2.5 text-sm transition hover:bg-gray-700 hover:text-purple-400
+                            ${proxyCity === c.value ? 'text-purple-400 bg-gray-700/50' : 'text-white'}`}
+                        >
+                          {c.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                 </div>
-              </div>
+              )}
 
               {/* Sticky session */}
               <div className="flex items-center justify-between bg-gray-800 border border-gray-700 rounded-lg px-4 py-3">
