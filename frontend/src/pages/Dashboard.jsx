@@ -27,7 +27,7 @@ const NAV_LINKS = [
 ]
 
 export default function Dashboard() {
-  const { user, logout } = useAuth()
+  const { user, logout, updateUser } = useAuth()
   const navigate = useNavigate()
   const [activeTab, setActiveTab] = useState('Dashboard')
   const [copied, setCopied] = useState('')
@@ -41,6 +41,10 @@ export default function Dashboard() {
           headers: { Authorization: `Bearer ${token}` }
         })
         setProfile(res.data)
+        // Sync isVerified into localStorage in case user just verified via email link
+        if (res.data.isVerified && !user?.isVerified) {
+          updateUser({ isVerified: true })
+        }
       } catch (err) {
         console.error('Failed to load profile', err)
       }
