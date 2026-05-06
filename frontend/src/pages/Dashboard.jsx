@@ -48,6 +48,21 @@ export default function Dashboard() {
     fetchProfile()
   }, [])
 
+  const [globedata, setGlobedata] = useState(null)
+
+  useEffect(() => {
+    const fetchGlobedata = async () => {
+      try {
+        const token = localStorage.getItem('token')
+        const res = await axios.get('/api/user/me/globedata', {
+          headers: { Authorization: `Bearer ${token}` }
+        })
+        if (res.data.available) setGlobedata(res.data)
+      } catch {}
+    }
+    fetchGlobedata()
+  }, [])
+
   const [paymentLoading, setPaymentLoading] = useState(false)
   const [paymentError, setPaymentError] = useState('')
   const [testResult, setTestResult] = useState(null)
@@ -141,13 +156,16 @@ export default function Dashboard() {
     setTimeout(() => setCopied(''), 2000)
   }
 
+  // Prefer real GlobeData numbers; fall back to local DB values
+  const gbTotal     = globedata ? globedata.gb_total     : (profile?.bandwidthPurchased || 0)
+  const gbUsed      = globedata ? globedata.gb_used      : ((profile?.usage?.bandwidthUsed || 0) / 1024)
+  const gbRemaining = globedata ? globedata.gb_remaining : Math.max(gbTotal - gbUsed, 0)
+  const bandwidthBarPct = gbTotal > 0 ? Math.min((gbUsed / gbTotal) * 100, 100).toFixed(1) : 0
+  const planName = gbTotal > 0 ? `${gbTotal.toFixed(2)} GB` : 'Free Trial'
+  // Keep legacy vars for any remaining references
   const bandwidthUsed = profile?.usage?.bandwidthUsed || 0
-  const bandwidthGB = (bandwidthUsed / 1024).toFixed(2)
-  const bandwidthPurchased = profile?.bandwidthPurchased || 0
-  const planName = bandwidthPurchased > 0 ? `${bandwidthPurchased} GB` : 'Free Trial'
-  const bandwidthBarPct = bandwidthPurchased > 0
-    ? Math.min((bandwidthUsed / (bandwidthPurchased * 1024)) * 100, 100).toFixed(1)
-    : 0
+  const bandwidthGB = gbUsed.toFixed ? gbUsed.toFixed(2) : '0.00'
+  const bandwidthPurchased = gbTotal
 
   return (
     <div className="min-h-screen bg-gray-950 text-white flex flex-col">
@@ -244,30 +262,30 @@ export default function Dashboard() {
             {/* 4 Stat Cards */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
 
-              {/* Total Usage */}
+              {/* GB Used */}
               <div className="bg-gray-900 border border-gray-800 rounded-xl p-5">
                 <div className="flex items-center justify-between mb-3">
-                  <p className="text-gray-400 text-xs font-medium uppercase tracking-wide">Total Usage</p>
+                  <p className="text-gray-400 text-xs font-medium uppercase tracking-wide">Data Used</p>
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4 text-gray-500">
                     <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
                   </svg>
                 </div>
-                <p className="text-2xl font-bold">{bandwidthGB} GB</p>
-                <p className="text-xs text-gray-500 mt-1">{bandwidthUsed} MB used</p>
+                <p className="text-2xl font-bold">{typeof gbUsed === 'number' ? gbUsed.toFixed(4) : '0.0000'} <span className="text-base text-gray-400">GB</span></p>
+                <p className="text-xs text-gray-500 mt-1">{globedata ? 'Live from GlobeData' : 'Local estimate'}</p>
               </div>
 
-              {/* Active Plan */}
+              {/* GB Remaining */}
               <div className="bg-gray-900 border border-gray-800 rounded-xl p-5">
                 <div className="flex items-center justify-between mb-3">
-                  <p className="text-gray-400 text-xs font-medium uppercase tracking-wide">Active Plan</p>
+                  <p className="text-gray-400 text-xs font-medium uppercase tracking-wide">Remaining</p>
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4 text-gray-500">
                     <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
                     <polyline points="15 3 21 3 21 9"/>
                     <line x1="10" y1="14" x2="21" y2="3"/>
                   </svg>
                 </div>
-                <p className="text-2xl font-bold text-purple-400 capitalize">{planName}</p>
-                <p className="text-xs text-gray-500 mt-1">{profile?.usage?.proxiesGenerated || 0} proxies generated</p>
+                <p className="text-2xl font-bold text-green-400">{typeof gbRemaining === 'number' ? gbRemaining.toFixed(2) : '0.00'} <span className="text-base text-gray-400">GB</span></p>
+                <p className="text-xs text-gray-500 mt-1">of {typeof gbTotal === 'number' ? gbTotal.toFixed(2) : '0.00'} GB total</p>
               </div>
 
               {/* Quick Actions */}
@@ -813,9 +831,9 @@ export default function Dashboard() {
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div className="bg-gray-900 border border-gray-800 rounded-xl p-5">
-                <p className="text-gray-400 text-xs font-medium uppercase tracking-wide mb-3">Bandwidth Used</p>
-                <p className="text-3xl font-bold">{bandwidthGB} <span className="text-lg text-gray-400">GB</span></p>
-                <p className="text-xs text-gray-500 mt-1">{bandwidthUsed} MB total</p>
+                <p className="text-gray-400 text-xs font-medium uppercase tracking-wide mb-3">Data Used</p>
+                <p className="text-3xl font-bold">{typeof gbUsed === 'number' ? gbUsed.toFixed(4) : '0.0000'} <span className="text-lg text-gray-400">GB</span></p>
+                <p className="text-xs text-gray-500 mt-1">{globedata ? 'Live from GlobeData' : 'Local estimate'}</p>
               </div>
               <div className="bg-gray-900 border border-gray-800 rounded-xl p-5">
                 <p className="text-gray-400 text-xs font-medium uppercase tracking-wide mb-3">Proxies Generated</p>
@@ -823,18 +841,21 @@ export default function Dashboard() {
                 <p className="text-xs text-gray-500 mt-1">All time</p>
               </div>
               <div className="bg-gray-900 border border-gray-800 rounded-xl p-5">
-                <p className="text-gray-400 text-xs font-medium uppercase tracking-wide mb-3">Active Plan</p>
-                <p className="text-3xl font-bold text-purple-400 capitalize">{planName}</p>
-                <p className="text-xs text-gray-500 mt-1">Current subscription</p>
+                <p className="text-gray-400 text-xs font-medium uppercase tracking-wide mb-3">Remaining</p>
+                <p className="text-3xl font-bold text-green-400">{typeof gbRemaining === 'number' ? gbRemaining.toFixed(2) : '0.00'} <span className="text-lg text-gray-400">GB</span></p>
+                <p className="text-xs text-gray-500 mt-1">of {typeof gbTotal === 'number' ? gbTotal.toFixed(2) : '0.00'} GB total</p>
               </div>
             </div>
 
             <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
-              <h3 className="font-semibold mb-4">Bandwidth Overview</h3>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-semibold">Bandwidth Overview</h3>
+                {globedata && <span className="text-xs text-green-400 bg-green-500/10 border border-green-500/20 px-2 py-1 rounded-full">Live data</span>}
+              </div>
               <div className="space-y-3">
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-400">Used</span>
-                  <span>{bandwidthGB} GB</span>
+                  <span>{typeof gbUsed === 'number' ? gbUsed.toFixed(4) : '0.0000'} GB</span>
                 </div>
                 <div className="w-full bg-gray-800 rounded-full h-3">
                   <div
@@ -844,7 +865,7 @@ export default function Dashboard() {
                 </div>
                 <div className="flex justify-between text-xs text-gray-500">
                   <span>0 GB</span>
-                  <span>{bandwidthPurchased > 0 ? `${bandwidthPurchased} GB purchased` : 'No bandwidth purchased yet'}</span>
+                  <span>{gbTotal > 0 ? `${typeof gbTotal === 'number' ? gbTotal.toFixed(2) : gbTotal} GB total` : 'No bandwidth purchased yet'}</span>
                 </div>
               </div>
             </div>

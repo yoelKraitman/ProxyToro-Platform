@@ -5,6 +5,7 @@ import speakeasy from 'speakeasy'
 import { createRequire } from 'module'
 import User from '../models/User.js'
 import { sendVerificationEmail, sendPasswordResetEmail } from '../services/email.js'
+import { createSubuser } from '../services/globedata.js'
 
 const require = createRequire(import.meta.url)
 const disposableDomains = new Set(require('disposable-email-domains'))
@@ -34,6 +35,20 @@ router.post('/register', async (req, res) => {
     const verificationToken = crypto.randomBytes(32).toString('hex')
 
     const user = await User.create({ email, password, verificationToken })
+
+    // Create GlobeData sub-user (don't block registration if it fails)
+    try {
+      const sub = await createSubuser({ email, gb: 0, label: email })
+      if (sub) {
+        await User.findByIdAndUpdate(user._id, {
+          globedataId:       sub.id,
+          globedataUsername: sub.proxy_username,
+          globedataPassword: sub.proxy_password,
+        })
+      }
+    } catch (gdErr) {
+      console.error('GlobeData sub-user creation failed:', gdErr.message)
+    }
 
     // Send verification email (don't block registration if it fails)
     try {

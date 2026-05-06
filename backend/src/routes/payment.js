@@ -1,6 +1,7 @@
 import express from 'express'
 import { authMiddleware } from '../middleware/auth.js'
 import User from '../models/User.js'
+import { allocateGb } from '../services/globedata.js'
 
 const router = express.Router()
 
@@ -57,6 +58,9 @@ router.post('/webhook', express.json(), async (req, res) => {
       const gb = parseFloat(parts[1])
 
       if (userId && gb) {
+        const user = await User.findById(userId)
+        if (!user) return res.sendStatus(200)
+
         await User.findByIdAndUpdate(userId, {
           $inc: { bandwidthPurchased: gb },
           $push: {
@@ -70,6 +74,15 @@ router.post('/webhook', express.json(), async (req, res) => {
             }
           }
         })
+
+        // Allocate purchased GB to the user's GlobeData sub-user
+        if (user.globedataId) {
+          try {
+            await allocateGb(user.globedataId, gb)
+          } catch (gdErr) {
+            console.error('GlobeData GB allocation failed:', gdErr.message)
+          }
+        }
       }
     }
 

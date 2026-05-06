@@ -82,6 +82,13 @@ export async function getSubuserUsage(globedataId, days = 30) {
   return data.usage
 }
 
+// Get current GB balance for a specific sub-user (gb_total, gb_used, gb_remaining)
+export async function getSubuserBalance(globedataId) {
+  if (!isConfigured()) return null
+  const data = await gd('/subusers')
+  return data.subusers?.find(s => s.id === globedataId) || null
+}
+
 // Get overall pool summary (GB totals, sub-user count)
 export async function getSummary() {
   if (!isConfigured()) return null

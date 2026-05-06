@@ -2,6 +2,7 @@ import express from 'express'
 import { authMiddleware } from '../middleware/auth.js'
 import User from '../models/User.js'
 import bcrypt from 'bcryptjs'
+import { getSubuserBalance } from '../services/globedata.js'
 
 const router = express.Router()
 
@@ -13,6 +14,29 @@ router.get('/me', authMiddleware, async (req, res) => {
     res.json(user)
   } catch (err) {
     res.status(500).json({ message: err.message })
+  }
+})
+
+// GET /api/user/me/globedata — real bandwidth usage from GlobeData
+router.get('/me/globedata', authMiddleware, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id)
+    if (!user?.globedataId) return res.json({ available: false })
+
+    const sub = await getSubuserBalance(user.globedataId)
+    if (!sub) return res.json({ available: false })
+
+    res.json({
+      available:    true,
+      gb_total:     sub.gb_total,
+      gb_used:      sub.gb_used,
+      gb_remaining: sub.gb_remaining,
+      is_active:    sub.is_active,
+      expiry_date:  sub.expiry_date,
+      last_used_at: sub.last_used_at,
+    })
+  } catch (err) {
+    res.status(500).json({ available: false, message: err.message })
   }
 })
 
