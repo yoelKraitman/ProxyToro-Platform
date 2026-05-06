@@ -126,6 +126,7 @@ router.post('/2fa-login', async (req, res) => {
 // GET /api/auth/verify/:token — user clicks the link in their email
 router.get('/verify/:token', async (req, res) => {
   const base = (process.env.FRONTEND_URL || 'http://localhost:3000').replace(/\/+$/, '')
+  const target = `${base}/verify-success`
   try {
     const user = await User.findOne({ verificationToken: req.params.token })
     if (user && !user.isVerified) {
@@ -135,7 +136,7 @@ router.get('/verify/:token', async (req, res) => {
   } catch (err) {
     console.error('Verify error:', err.message)
   }
-  res.redirect(`${base}/verify-success`)
+  res.send(`<!DOCTYPE html><html><head><meta charset="utf-8"><meta http-equiv="refresh" content="0; url=${target}"><title>Verified</title></head><body><p>Redirecting... <a href="${target}">Click here</a></p></body></html>`)
 })
 
 // POST /api/auth/resend-verification — resend the verification email
