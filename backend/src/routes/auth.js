@@ -133,10 +133,30 @@ router.get('/verify/:token', async (req, res) => {
       user.isVerified = true
       await user.save()
     }
-    res.redirect(loginUrl)
   } catch (err) {
-    res.redirect(loginUrl)
+    console.error('Verify error:', err.message)
   }
+  res.send(`<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="refresh" content="2; url=${loginUrl}">
+  <title>Email Verified</title>
+  <style>
+    body { font-family: sans-serif; background: #030712; color: white; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; text-align: center; }
+    h1 { color: #a855f7; }
+    a { display: inline-block; margin-top: 16px; background: #9333ea; color: white; padding: 12px 28px; border-radius: 8px; text-decoration: none; font-weight: bold; }
+  </style>
+</head>
+<body>
+  <div>
+    <h1>ProxyToro</h1>
+    <h2>✓ Email verified!</h2>
+    <p>Redirecting you to login...</p>
+    <a href="${loginUrl}">Go to Login</a>
+  </div>
+</body>
+</html>`)
 })
 
 // POST /api/auth/resend-verification — resend the verification email
