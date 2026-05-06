@@ -11,6 +11,7 @@ import ForgotPassword from './pages/ForgotPassword'
 import ResetPassword from './pages/ResetPassword'
 import Setup2FA from './pages/Setup2FA'
 import VerifyEmail from './pages/VerifyEmail'
+import VerifySuccess from './pages/VerifySuccess'
 
 function PrivateRoute({ children }) {
   const { user } = useAuth()
@@ -61,6 +62,7 @@ function AppRoutes() {
       } />
       <Route path="/use-cases" element={<UseCases />} />
       <Route path="/use-cases/:slug" element={<UseCase />} />
+      <Route path="/verify-success" element={<VerifySuccess />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/reset-password" element={<ResetPassword />} />
       <Route path="*" element={<Navigate to="/" />} />
