@@ -126,12 +126,15 @@ router.post('/2fa-login', async (req, res) => {
 // GET /api/auth/verify/:token — user clicks the link in their email
 router.get('/verify/:token', async (req, res) => {
   const base = (process.env.FRONTEND_URL || 'http://localhost:3000').replace(/\/+$/, '')
-  const loginUrl = `${base}/dashboard`
+  let loginUrl = `${base}/login?verified=true`
   try {
     const user = await User.findOne({ verificationToken: req.params.token })
-    if (user && !user.isVerified) {
-      user.isVerified = true
-      await user.save()
+    if (user) {
+      if (!user.isVerified) {
+        user.isVerified = true
+        await user.save()
+      }
+      loginUrl = `${base}/login?verified=true&email=${encodeURIComponent(user.email)}`
     }
   } catch (err) {
     console.error('Verify error:', err.message)
