@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '../context/AuthContext'
 import { useNavigate } from 'react-router-dom'
@@ -14,6 +14,23 @@ const TABS = [
   { label: 'Usage', icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg> },
   { label: 'Become an Affiliate', icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg> },
   { label: 'Account', icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg> },
+]
+
+const COUNTRIES = [
+  { value: '',   label: 'Any Country (Rotating)' },
+  { value: 'US', label: 'United States' },
+  { value: 'GB', label: 'United Kingdom' },
+  { value: 'DE', label: 'Germany' },
+  { value: 'FR', label: 'France' },
+  { value: 'ES', label: 'Spain' },
+  { value: 'CA', label: 'Canada' },
+  { value: 'AU', label: 'Australia' },
+  { value: 'IL', label: 'Israel' },
+  { value: 'JP', label: 'Japan' },
+  { value: 'BR', label: 'Brazil' },
+  { value: 'IN', label: 'India' },
+  { value: 'NL', label: 'Netherlands' },
+  { value: 'SG', label: 'Singapore' },
 ]
 
 const NAV_LINKS = [
@@ -52,6 +69,13 @@ export default function Dashboard() {
   const [testResult, setTestResult] = useState(null)
   const [testLoading, setTestLoading] = useState(false)
   const [proxyCountry, setProxyCountry] = useState('US')
+  const [countryOpen, setCountryOpen] = useState(false)
+  const countryRef = useRef(null)
+  useEffect(() => {
+    const handler = (e) => { if (countryRef.current && !countryRef.current.contains(e.target)) setCountryOpen(false) }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [])
   const [proxyState, setProxyState] = useState('')
   const [proxyCity, setProxyCity] = useState('')
   const [proxyCount, setProxyCount] = useState(10)
@@ -453,27 +477,43 @@ export default function Dashboard() {
             <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 space-y-5">
 
               {/* Country */}
-              <div>
+              <div ref={countryRef} className="relative">
                 <label className="block text-sm text-gray-400 mb-2">Country</label>
-                <select
-                  value={proxyCountry}
-                  onChange={e => setProxyCountry(e.target.value)}
-                  className="w-full bg-gray-800 border border-gray-700 text-white rounded-lg px-4 py-3 focus:outline-none focus:border-purple-500"
+                <button
+                  type="button"
+                  onClick={() => setCountryOpen(v => !v)}
+                  className="w-full bg-gray-800 border border-gray-700 text-white rounded-lg px-4 py-3 flex items-center justify-between focus:outline-none focus:border-purple-500 transition hover:border-gray-600"
                 >
-                  <option value="">Any Country (Rotating)</option>
-                  <option value="US">United States</option>
-                  <option value="GB">United Kingdom</option>
-                  <option value="DE">Germany</option>
-                  <option value="FR">France</option>
-                  <option value="CA">Canada</option>
-                  <option value="AU">Australia</option>
-                  <option value="IL">Israel</option>
-                  <option value="JP">Japan</option>
-                  <option value="BR">Brazil</option>
-                  <option value="IN">India</option>
-                  <option value="NL">Netherlands</option>
-                  <option value="SG">Singapore</option>
-                </select>
+                  <span>{COUNTRIES.find(c => c.value === proxyCountry)?.label || 'Any Country (Rotating)'}</span>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+                    className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${countryOpen ? 'rotate-180' : ''}`}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5"/>
+                  </svg>
+                </button>
+                <div
+                  className="absolute z-20 left-0 right-0 mt-1 bg-gray-800 border border-gray-700 rounded-xl overflow-hidden shadow-2xl"
+                  style={{
+                    maxHeight: countryOpen ? '260px' : '0px',
+                    opacity: countryOpen ? 1 : 0,
+                    overflow: 'hidden',
+                    transition: 'max-height 220ms ease, opacity 180ms ease',
+                    pointerEvents: countryOpen ? 'auto' : 'none',
+                  }}
+                >
+                  <div className="overflow-y-auto max-h-64">
+                    {COUNTRIES.map(c => (
+                      <button
+                        key={c.value}
+                        type="button"
+                        onClick={() => { setProxyCountry(c.value); setCountryOpen(false) }}
+                        className={`w-full text-left px-4 py-2.5 text-sm transition hover:bg-gray-700 hover:text-purple-400
+                          ${proxyCountry === c.value ? 'text-purple-400 bg-gray-700/50' : 'text-white'}`}
+                      >
+                        {c.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               </div>
 
               {/* State & City */}

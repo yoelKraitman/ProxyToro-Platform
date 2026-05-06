@@ -21,13 +21,14 @@ export default function Setup2FA() {
       .catch(() => {})
   }, [])
 
-  const handleVerify = async () => {
-    if (code.length !== 6) return setError('Please enter the 6-digit code')
+  const handleVerify = async (codeOverride) => {
+    const codeToUse = codeOverride ?? code
+    if (codeToUse.length !== 6) return setError('Please enter the 6-digit code')
     setLoading(true)
     setError('')
     try {
       const token = localStorage.getItem('token')
-      await axios.post('/api/2fa/verify', { token: code }, { headers: { Authorization: `Bearer ${token}` } })
+      await axios.post('/api/2fa/verify', { token: codeToUse }, { headers: { Authorization: `Bearer ${token}` } })
       updateUser({ twoFactorEnabled: true })
       setDone(true)
     } catch (err) {
@@ -208,7 +209,12 @@ export default function Setup2FA() {
                 inputMode="numeric"
                 maxLength={6}
                 value={code}
-                onChange={e => { setCode(e.target.value.replace(/\D/g, '')); setError('') }}
+                onChange={e => {
+                  const val = e.target.value.replace(/\D/g, '')
+                  setCode(val)
+                  setError('')
+                  if (val.length === 6) handleVerify(val)
+                }}
                 placeholder="000000"
                 className="w-full bg-gray-800 border border-gray-700 text-white text-center text-3xl font-mono tracking-[0.5em] rounded-lg px-4 py-4 focus:outline-none focus:border-purple-500 transition placeholder:text-gray-600 placeholder:tracking-widest"
               />
