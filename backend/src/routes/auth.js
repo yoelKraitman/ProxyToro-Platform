@@ -125,23 +125,17 @@ router.post('/2fa-login', async (req, res) => {
 
 // GET /api/auth/verify/:token — user clicks the link in their email
 router.get('/verify/:token', async (req, res) => {
+  const loginUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/login?verified=true`
   try {
-    const token = req.params.token
-    console.log('[verify] token received:', token)
-    const user = await User.findOne({ verificationToken: token })
-    console.log('[verify] user found:', user ? user.email : 'NOT FOUND')
-
-    if (!user)
-      return res.status(400).send('<h2>Invalid or expired verification link.</h2>')
-
-    user.isVerified = true
-    user.verificationToken = undefined
-    await user.save()
-
-    // Redirect to frontend login page with success message
-    res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:3000'}/login?verified=true`)
+    const user = await User.findOne({ verificationToken: req.params.token })
+    if (user && !user.isVerified) {
+      user.isVerified = true
+      await user.save()
+    }
+    // Always redirect to login — handles Gmail pre-fetch consuming the link
+    res.redirect(loginUrl)
   } catch (err) {
-    res.status(500).send('<h2>Something went wrong.</h2>')
+    res.redirect(loginUrl)
   }
 })
 
