@@ -13,6 +13,7 @@
   "dependencies": {
     "bcryptjs": "^3.0.2",
     "cors": "^2.8.5",
+    "disposable-email-domains": "^1.0.62",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
     "https-proxy-agent": "^9.0.0",

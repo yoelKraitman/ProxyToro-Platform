@@ -2,8 +2,12 @@ import express from 'express'
 import jwt from 'jsonwebtoken'
 import crypto from 'crypto'
 import speakeasy from 'speakeasy'
+import { createRequire } from 'module'
 import User from '../models/User.js'
 import { sendVerificationEmail, sendPasswordResetEmail } from '../services/email.js'
+
+const require = createRequire(import.meta.url)
+const disposableDomains = new Set(require('disposable-email-domains'))
 
 const router = express.Router()
 
@@ -18,6 +22,10 @@ router.post('/register', async (req, res) => {
 
     if (password.length < 6)
       return res.status(400).json({ message: 'Password must be at least 6 characters' })
+
+    const domain = email.split('@')[1]?.toLowerCase()
+    if (!domain || disposableDomains.has(domain))
+      return res.status(400).json({ message: 'Temporary email addresses are not allowed. Please use a real email.' })
 
     const exists = await User.findOne({ email })
     if (exists)
@@ -38,7 +46,7 @@ router.post('/register', async (req, res) => {
 
     res.status(201).json({
       token,
-      user: { id: user._id, email: user.email, role: user.role, isVerified: user.isVerified },
+      user: { id: user._id, email: user.email, role: user.role, isVerified: user.isVerified, twoFactorEnabled: false },
       message: 'Account created! Please check your email to verify your account.'
     })
   } catch (err) {
@@ -76,7 +84,7 @@ router.post('/login', async (req, res) => {
 
     res.json({
       token,
-      user: { id: user._id, email: user.email, role: user.role, isVerified: user.isVerified }
+      user: { id: user._id, email: user.email, role: user.role, isVerified: user.isVerified, twoFactorEnabled: user.twoFactorEnabled }
     })
   } catch (err) {
     res.status(500).json({ message: 'Server error', error: err.message })
@@ -108,7 +116,7 @@ router.post('/2fa-login', async (req, res) => {
 
     res.json({
       token: jwtToken,
-      user: { id: user._id, email: user.email, role: user.role, isVerified: user.isVerified }
+      user: { id: user._id, email: user.email, role: user.role, isVerified: user.isVerified, twoFactorEnabled: true }
     })
   } catch (err) {
     res.status(500).json({ message: err.message })
