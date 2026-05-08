@@ -87,6 +87,12 @@ export default function Login() {
     <div className="min-h-screen bg-gray-950 flex items-center justify-center px-4">
       <div className="w-full max-w-md">
 
+        <div className="mb-4">
+          <Link to="/" className="text-sm text-gray-400 hover:text-purple-400 transition flex items-center gap-1">
+            ← Back to home
+          </Link>
+        </div>
+
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-purple-400">ProxyToro</h1>
           <p className="text-gray-400 mt-2">
