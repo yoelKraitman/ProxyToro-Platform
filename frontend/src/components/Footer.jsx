@@ -1,19 +1,38 @@
 const columns = [
   {
     title: 'Product',
-    links: ['Pricing', 'Features', 'Integrations', 'Use Cases'],
+    links: [
+      { label: 'Pricing',      href: '/#pricing' },
+      { label: 'Features',     href: '#' },
+      { label: 'Integrations', href: '/#integration' },
+      { label: 'Use Cases',    href: '/use-cases' },
+    ],
   },
   {
     title: 'Company',
-    links: ['About Us', 'Contact Sales', 'Referral Program', 'Blog'],
+    links: [
+      { label: 'About Us',          href: '#' },
+      { label: 'Contact Sales',     href: '/contact' },
+      { label: 'Referral Program',  href: '#' },
+      { label: 'Blog',              href: '#' },
+    ],
   },
   {
     title: 'Legal',
-    links: ['Privacy Policy', 'Terms of Service', 'Cookie Policy', 'GDPR'],
+    links: [
+      { label: 'Privacy Policy',  href: '#' },
+      { label: 'Terms of Service', href: '#' },
+      { label: 'Cookie Policy',   href: '#' },
+      { label: 'GDPR',            href: '#' },
+    ],
   },
   {
     title: 'Support',
-    links: ['Help Center', 'Documentation', 'API Reference', 'Status'],
+    links: [
+      { label: 'Help Center',    href: '#' },
+      { label: 'Documentation',  href: '#' },
+      { label: 'Status',         href: '#' },
+    ],
   },
 ]
 
@@ -71,7 +90,7 @@ export default function Footer() {
               <a href="mailto:support@proxytoro.com" className="text-gray-400 hover:text-purple-400 transition" aria-label="Email">
                 <EmailIcon />
               </a>
-              <a href="tel:+1234567890" className="text-gray-400 hover:text-purple-400 transition" aria-label="Phone">
+              <a href="https://wa.me/message/LIKTP5SBHFJFB1" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-purple-400 transition" aria-label="Phone">
                 <PhoneIcon />
               </a>
             </div>
@@ -83,9 +102,9 @@ export default function Footer() {
               <h4 className="text-white font-semibold text-sm mb-4">{col.title}</h4>
               <ul className="space-y-3">
                 {col.links.map(link => (
-                  <li key={link}>
-                    <a href="#" className="text-gray-400 hover:text-white text-sm transition">
-                      {link}
+                  <li key={link.label}>
+                    <a href={link.href} className="text-gray-400 hover:text-white text-sm transition">
+                      {link.label}
                     </a>
                   </li>
                 ))}
