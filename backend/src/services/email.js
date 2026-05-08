@@ -27,11 +27,20 @@ function emailWrapper(title, bodyHtml) {
 function buttonHtml(url, label) {
   return `<table cellpadding="0" cellspacing="0" border="0" style="margin:24px 0;">
     <tr>
-      <td align="center" bgcolor="#9333ea" style="border-radius:8px;padding:0;">
+      <td align="center">
+        <!--[if mso]>
+        <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word"
+          href="${url}" style="height:46px;v-text-anchor:middle;width:200px;" arcsize="17%" stroke="f" fillcolor="#9333ea">
+          <w:anchorlock/>
+          <center style="color:#ffffff;font-family:Arial,sans-serif;font-size:16px;font-weight:bold;">${label}</center>
+        </v:roundrect>
+        <![endif]-->
+        <!--[if !mso]><!-->
         <a href="${url}" target="_blank"
-          style="display:inline-block;padding:14px 32px;color:#ffffff;text-decoration:none;font-weight:bold;font-size:16px;border-radius:8px;font-family:Arial,sans-serif;">
+          style="background-color:#9333ea;border-radius:8px;color:#ffffff;display:inline-block;font-family:Arial,sans-serif;font-size:16px;font-weight:bold;line-height:46px;text-align:center;text-decoration:none;width:200px;-webkit-text-size-adjust:none;">
           ${label}
         </a>
+        <!--<![endif]-->
       </td>
     </tr>
   </table>
