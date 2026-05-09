@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+
 import axios from 'axios'
 import { useAuth } from '../context/AuthContext'
 
@@ -61,6 +62,16 @@ export default function Register() {
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-purple-400">ProxyToro</h1>
           <p className="text-gray-400 mt-2">Create your account</p>
+        </div>
+
+        {/* Free trial notice */}
+        <div className="bg-purple-600/10 border border-purple-500/30 rounded-2xl px-5 py-4 mb-4 text-sm">
+          <p className="text-purple-300 font-semibold mb-1">🎁 Free Trial Available</p>
+          <p className="text-gray-400 leading-relaxed">
+            Free trials are granted to registered companies only. Register with your business domain email, then{' '}
+            <Link to="/contact" className="text-purple-400 hover:underline">contact our sales team</Link>
+            {' '}to activate your free trial.
+          </p>
         </div>
 
         {/* Card */}
