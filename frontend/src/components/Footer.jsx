@@ -11,7 +11,7 @@ const columns = [
   {
     title: 'Company',
     links: [
-      { label: 'About Us',          href: '#' },
+      { label: 'About Us',          href: '/about' },
       { label: 'Contact Sales',     href: '/contact' },
       { label: 'Referral Program',  href: '#' },
       { label: 'Blog',              href: '#' },

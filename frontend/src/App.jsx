@@ -14,6 +14,7 @@ import VerifyEmail from './pages/VerifyEmail'
 import VerifySuccess from './pages/VerifySuccess'
 import ContactSales from './pages/ContactSales'
 import Integration from './pages/Integration'
+import About from './pages/About'
 
 function PrivateRoute({ children }) {
   const { user } = useAuth()
@@ -67,6 +68,7 @@ function AppRoutes() {
       <Route path="/verify-success" element={<VerifySuccess />} />
       <Route path="/contact" element={<ContactSales />} />
       <Route path="/integration" element={<Integration />} />
+      <Route path="/about" element={<About />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/reset-password" element={<ResetPassword />} />
       <Route path="*" element={<Navigate to="/" />} />
