@@ -110,7 +110,7 @@ export default function Navbar() {
             </div>
           </div>
 
-          <a href="/#integration" className="hover:text-white transition">Integration</a>
+          <a href="/integration" className="hover:text-white transition">Integration</a>
           <a href="/#pricing" className="hover:text-white transition">Pricing</a>
           <a href="/#affiliate" className="hover:text-white transition">Become an affiliate</a>
           <a href="/#faq" className="hover:text-white transition">FAQ</a>
