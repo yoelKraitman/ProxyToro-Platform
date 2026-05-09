@@ -37,7 +37,7 @@ router.get('/list', authMiddleware, async (req, res) => {
     for (let i = 0; i < num; i++) {
       let username = baseUsername
 
-      if (country) username += `-country-${country.toUpperCase()}`
+      if (country) username += `-country-${country.toLowerCase()}`
       if (state)   username += `-state-${state.toLowerCase().replace(/\s+/g, '')}`
       if (city)    username += `-city-${city.toLowerCase().replace(/\s+/g, '')}`
 
@@ -78,7 +78,7 @@ router.get('/test', authMiddleware, async (req, res) => {
     return res.status(500).json({ message: 'Proxy credentials not configured.' })
 
   const { country = '' } = req.query
-  const username = country ? `${baseUsername}-country-${country.toUpperCase()}` : baseUsername
+  const username = country ? `${baseUsername}-country-${country.toLowerCase()}` : baseUsername
 
   const auth = Buffer.from(`${username}:${password}`).toString('base64')
   const start = Date.now()
