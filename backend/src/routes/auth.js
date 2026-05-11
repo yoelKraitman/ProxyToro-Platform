@@ -15,7 +15,7 @@ const router = express.Router()
 // POST /api/auth/register
 router.post('/register', async (req, res) => {
   try {
-    const { email, password } = req.body
+    const { email, password, source } = req.body
 
     if (!email || !password)
       return res.status(400).json({ message: 'Email and password are required' })
@@ -33,7 +33,9 @@ router.post('/register', async (req, res) => {
 
     const verificationToken = crypto.randomBytes(32).toString('hex')
 
-    const user = await User.create({ email, password, verificationToken })
+    const validSources = ['proxytoro', 'proxy4pokemon']
+    const userSource = validSources.includes(source) ? source : 'proxytoro'
+    const user = await User.create({ email, password, verificationToken, source: userSource })
 
     // Send verification email (don't block registration if it fails)
     try {

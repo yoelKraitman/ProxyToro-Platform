@@ -634,6 +634,7 @@ function UsersTab({ users, setUsers, loading, headers, exportCSV, fetchUsers, ad
           <thead>
             <tr className="border-b border-gray-800 text-gray-400">
               <th className="text-left px-6 py-4">Email</th>
+              <th className="text-left px-6 py-4">Source</th>
               <th className="text-left px-6 py-4">Plan (GB)</th>
               <th className="text-left px-6 py-4">Proxy Type</th>
               <th className="text-left px-6 py-4">Role</th>
@@ -663,6 +664,17 @@ function UsersTab({ users, setUsers, loading, headers, exportCSV, fetchUsers, ad
                     {u._rowIndex === 0
                       ? <button onClick={() => setSelectedUser(u)} className="text-left hover:text-purple-400 transition">{u.email}</button>
                       : <span className="text-gray-600 text-xs pl-2">↳ same user</span>}
+                  </td>
+                  <td className="px-6 py-4">
+                    {u._rowIndex === 0 && (
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                        u.source === 'proxy4pokemon'
+                          ? 'bg-yellow-400/10 text-yellow-400 border border-yellow-400/20'
+                          : 'bg-purple-500/10 text-purple-400 border border-purple-500/20'
+                      }`}>
+                        {u.source === 'proxy4pokemon' ? '🎴 P4P' : '🐂 PT'}
+                      </span>
+                    )}
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex flex-col">

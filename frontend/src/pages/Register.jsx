@@ -40,7 +40,7 @@ export default function Register() {
     setLoading(true)
 
     try {
-      const res = await axios.post('/api/auth/register', { email, password }, { timeout: 60000 })
+      const res = await axios.post('/api/auth/register', { email, password, source: 'proxytoro' }, { timeout: 60000 })
       login(res.data.user, res.data.token)
       navigate('/dashboard')
     } catch (err) {
