@@ -21,7 +21,7 @@ function adminOnly(req, res, next) {
 // GET /api/admin/users
 router.get('/users', authMiddleware, adminOnly, async (req, res) => {
   try {
-    const users = await User.find().select('-password').sort({ createdAt: -1 })
+    const users = await User.find({ role: { $ne: 'admin' } }).select('-password').sort({ createdAt: -1 })
     res.json(users)
   } catch (err) {
     res.status(500).json({ message: 'Server error', error: err.message })
