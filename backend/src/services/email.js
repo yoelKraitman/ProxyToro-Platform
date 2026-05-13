@@ -27,20 +27,17 @@ function emailWrapper(title, bodyHtml) {
 function buttonHtml(url, label) {
   return `<table cellpadding="0" cellspacing="0" border="0" style="margin:24px 0;">
     <tr>
-      <td align="center">
+      <td align="center" bgcolor="#9333ea" style="border-radius:8px;">
         <!--[if mso]>
         <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word"
-          href="${url}" style="height:46px;v-text-anchor:middle;width:200px;" arcsize="17%" stroke="f" fillcolor="#9333ea">
+          href="${url}" style="height:46px;v-text-anchor:middle;width:220px;" arcsize="10%" stroke="f" fillcolor="#9333ea">
           <w:anchorlock/>
           <center style="color:#ffffff;font-family:Arial,sans-serif;font-size:16px;font-weight:bold;">${label}</center>
         </v:roundrect>
         <![endif]-->
-        <!--[if !mso]><!-->
-        <a href="${url}" target="_blank"
-          style="background-color:#9333ea;border-radius:8px;color:#ffffff;display:inline-block;font-family:Arial,sans-serif;font-size:16px;font-weight:bold;line-height:46px;text-align:center;text-decoration:none;width:200px;-webkit-text-size-adjust:none;">
+        <a href="${url}" target="_blank" style="background-color:#9333ea;border-radius:8px;color:#ffffff;display:inline-block;font-family:Arial,sans-serif;font-size:16px;font-weight:bold;line-height:46px;text-align:center;text-decoration:none;padding:0 30px;min-width:160px;mso-hide:all;">
           ${label}
         </a>
-        <!--<![endif]-->
       </td>
     </tr>
   </table>
@@ -51,7 +48,7 @@ function buttonHtml(url, label) {
 }
 
 export async function sendVerificationEmail(email, token) {
-  const verifyUrl = `${process.env.BACKEND_URL}/api/auth/verify/${token}`
+  const verifyUrl = `${(process.env.BACKEND_URL || '').trim()}/api/auth/verify/${token}`
   await resend.emails.send({
     from: 'ProxyToro <support@proxytoro.com>',
     to: email,
@@ -65,7 +62,7 @@ export async function sendVerificationEmail(email, token) {
 }
 
 export async function sendPasswordResetEmail(email, token) {
-  const resetUrl = `${process.env.FRONTEND_URL}/reset-password?token=${token}`
+  const resetUrl = `${(process.env.FRONTEND_URL || '').trim()}/reset-password?token=${token}`
   await resend.emails.send({
     from: 'ProxyToro <support@proxytoro.com>',
     to: email,
