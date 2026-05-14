@@ -3,12 +3,13 @@ import { Link } from 'react-router-dom'
 
 // Tiered per-GB pricing — more GB = cheaper rate
 const TIERS = [
-  { min: 1,    max: 9,        perGb: 3.00 },
-  { min: 10,   max: 49,       perGb: 2.50 },
-  { min: 50,   max: 199,      perGb: 1.80 },
-  { min: 200,  max: 499,      perGb: 1.20 },
-  { min: 500,  max: 999,      perGb: 0.80 },
-  { min: 1000, max: Infinity, perGb: 0.55 },
+  { min: 1,    max: 99,       perGb: 2.50 },
+  { min: 100,  max: 199,      perGb: 2.08 },
+  { min: 200,  max: 349,      perGb: 2.00 },
+  { min: 350,  max: 499,      perGb: 1.75 },
+  { min: 500,  max: 599,      perGb: 1.60 },
+  { min: 600,  max: 999,      perGb: 1.55 },
+  { min: 1000, max: Infinity, perGb: 1.30 },
 ]
 
 function getRate(gb) {
