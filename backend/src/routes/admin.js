@@ -154,6 +154,18 @@ router.post('/users/:id/add-gb', authMiddleware, adminOnly, async (req, res) => 
   }
 })
 
+// PUT /api/admin/users/:id/plan-label — rename the plan label for a user
+router.put('/users/:id/plan-label', authMiddleware, adminOnly, async (req, res) => {
+  try {
+    const { planLabel } = req.body
+    const user = await User.findByIdAndUpdate(req.params.id, { planLabel }, { new: true })
+    if (!user) return res.status(404).json({ message: 'User not found' })
+    res.json({ planLabel: user.planLabel })
+  } catch (err) {
+    res.status(500).json({ message: err.message })
+  }
+})
+
 // GET /api/admin/users/:id/logs — real proxy request logs from GlobeData
 router.get('/users/:id/logs', authMiddleware, adminOnly, async (req, res) => {
   try {

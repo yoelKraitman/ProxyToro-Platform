@@ -248,6 +248,8 @@ function UsersTab({ users, setUsers, loading, headers, exportCSV, fetchUsers, ad
   const [deleteConfirmUser, setDeleteConfirmUser] = useState(null)
   const [fadingRows, setFadingRows]         = useState(new Set())
   const [loadingAction, setLoadingAction]   = useState({})
+  const [editingLabel, setEditingLabel]     = useState(null)
+  const [labelValue, setLabelValue]         = useState('')
 
   const handleToggleStatus = async (userId) => {
     try {
@@ -324,6 +326,18 @@ function UsersTab({ users, setUsers, loading, headers, exportCSV, fetchUsers, ad
       addToast(err.response?.data?.message || 'Failed to add GB', 'error')
     } finally {
       setActionLoading(userId, 'gb', false)
+    }
+  }
+
+  const handleSaveLabel = async (userId) => {
+    try {
+      await axios.put(`/api/admin/users/${userId}/plan-label`, { planLabel: labelValue }, { headers })
+      setUsers(prev => prev.map(u => u._id === userId ? { ...u, planLabel: labelValue } : u))
+      addToast('Plan label updated')
+    } catch {
+      addToast('Failed to update label', 'error')
+    } finally {
+      setEditingLabel(null)
     }
   }
 
@@ -677,10 +691,27 @@ function UsersTab({ users, setUsers, loading, headers, exportCSV, fetchUsers, ad
                     )}
                   </td>
                   <td className="px-6 py-4">
-                    <div className="flex flex-col">
-                      <span className="capitalize font-medium">{u.bandwidthPurchased > 0 ? 'Active' : 'Free Trial'}</span>
-                      <span className="text-xs text-purple-400 transition-all duration-300">{u.bandwidthPurchased ? `${u.bandwidthPurchased} GB` : '— GB'}</span>
-                    </div>
+                    {editingLabel === u._id ? (
+                      <div className="flex items-center gap-1">
+                        <input
+                          autoFocus
+                          value={labelValue}
+                          onChange={e => setLabelValue(e.target.value)}
+                          onKeyDown={e => { if (e.key === 'Enter') handleSaveLabel(u._id); if (e.key === 'Escape') setEditingLabel(null) }}
+                          className="w-28 bg-gray-800 border border-purple-500 text-white rounded-lg px-2 py-1 text-xs focus:outline-none"
+                        />
+                        <button onClick={() => handleSaveLabel(u._id)} className="text-green-400 hover:text-green-300 text-xs px-1">✓</button>
+                        <button onClick={() => setEditingLabel(null)} className="text-gray-500 hover:text-white text-xs px-1">✕</button>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col group cursor-pointer" onClick={() => { setEditingLabel(u._id); setLabelValue(u.planLabel || (u.bandwidthPurchased > 0 ? 'Active' : 'Free Trial')) }}>
+                        <span className="capitalize font-medium group-hover:text-purple-300 transition">
+                          {u.planLabel || (u.bandwidthPurchased > 0 ? 'Active' : 'Free Trial')}
+                          <span className="ml-1 text-gray-600 group-hover:text-purple-400 text-xs">✎</span>
+                        </span>
+                        <span className="text-xs text-purple-400">{u.bandwidthPurchased ? `${u.bandwidthPurchased} GB` : '— GB'}</span>
+                      </div>
+                    )}
                   </td>
                   <td className="px-6 py-4">
                     {u._rowIndex === 0 && (

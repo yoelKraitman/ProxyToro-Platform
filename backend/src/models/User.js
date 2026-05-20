@@ -76,6 +76,7 @@ const userSchema = new mongoose.Schema({
   },
   resetPasswordToken:  { type: String },
   resetPasswordExpiry: { type: Date },
+  planLabel: { type: String, default: '' },
   isDisabled: { type: Boolean, default: false },
   lastLogin: { type: Date },
   createdAt: {
