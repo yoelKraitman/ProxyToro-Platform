@@ -250,6 +250,7 @@ function UsersTab({ users, setUsers, loading, headers, exportCSV, fetchUsers, ad
   const [loadingAction, setLoadingAction]   = useState({})
   const [editingLabel, setEditingLabel]     = useState(null)
   const [labelValue, setLabelValue]         = useState('')
+  const [userBalance, setUserBalance]       = useState(null)
 
   const handleToggleStatus = async (userId) => {
     try {
@@ -381,7 +382,7 @@ function UsersTab({ users, setUsers, loading, headers, exportCSV, fetchUsers, ad
           <div className="bg-gray-900 border border-gray-800 rounded-2xl p-8 w-full max-w-md shadow-2xl">
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-xl font-bold">User Details</h3>
-              <button onClick={() => { setSelectedUser(null); setUserLogs(null) }} className="text-gray-500 hover:text-white transition text-2xl leading-none">×</button>
+              <button onClick={() => { setSelectedUser(null); setUserLogs(null); setUserBalance(null) }} className="text-gray-500 hover:text-white transition text-2xl leading-none">×</button>
             </div>
             <div className="space-y-4">
               <div>
@@ -465,11 +466,16 @@ function UsersTab({ users, setUsers, loading, headers, exportCSV, fetchUsers, ad
                   </div>
                   <div className="bg-gray-800 rounded-xl p-3">
                     <p className="text-xs text-gray-500 mb-1">Bandwidth Used</p>
-                    <p className="text-xl font-bold">{((selectedUser.usage?.bandwidthUsed || 0) / 1024).toFixed(2)} GB</p>
+                    <p className="text-xl font-bold">
+                      {userBalance?.available ? `${userBalance.gb_used ?? 0} GB` : ((selectedUser.usage?.bandwidthUsed || 0) / 1024).toFixed(2) + ' GB'}
+                    </p>
+                    {userBalance?.last_used_at && <p className="text-xs text-gray-500 mt-1">Last used: {new Date(userBalance.last_used_at).toLocaleDateString()}</p>}
                   </div>
                   <div className="bg-gray-800 rounded-xl p-3">
-                    <p className="text-xs text-gray-500 mb-1">GB Purchased</p>
-                    <p className="text-xl font-bold text-green-400">{selectedUser.bandwidthPurchased || 0} GB</p>
+                    <p className="text-xs text-gray-500 mb-1">GB Remaining</p>
+                    <p className="text-xl font-bold text-green-400">
+                      {userBalance?.available ? `${userBalance.gb_remaining ?? selectedUser.bandwidthPurchased ?? 0} GB` : `${selectedUser.bandwidthPurchased || 0} GB`}
+                    </p>
                   </div>
                   <div className="bg-gray-800 rounded-xl p-3">
                     <p className="text-xs text-gray-500 mb-1">Packages</p>
@@ -676,7 +682,7 @@ function UsersTab({ users, setUsers, loading, headers, exportCSV, fetchUsers, ad
                 >
                   <td className="px-6 py-4">
                     {u._rowIndex === 0
-                      ? <button onClick={() => setSelectedUser(u)} className="text-left hover:text-purple-400 transition">{u.email}</button>
+                      ? <button onClick={() => { setSelectedUser(u); setUserBalance(null); axios.get(`/api/admin/users/${u._id}/balance`, { headers }).then(r => setUserBalance(r.data)).catch(() => {}) }} className="text-left hover:text-purple-400 transition">{u.email}</button>
                       : <span className="text-gray-600 text-xs pl-2">↳ same user</span>}
                   </td>
                   <td className="px-6 py-4">

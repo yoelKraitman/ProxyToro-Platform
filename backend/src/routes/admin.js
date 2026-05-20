@@ -166,6 +166,28 @@ router.put('/users/:id/plan-label', authMiddleware, adminOnly, async (req, res) 
   }
 })
 
+// GET /api/admin/users/:id/balance — real bandwidth from GlobeData
+router.get('/users/:id/balance', authMiddleware, adminOnly, async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id)
+    if (!user) return res.status(404).json({ message: 'User not found' })
+    if (!user.globedataId) return res.json({ available: false })
+
+    const sub = await getSubuserBalance(user.globedataId)
+    if (!sub) return res.json({ available: false })
+
+    res.json({
+      available:    true,
+      gb_total:     sub.gb_total,
+      gb_used:      sub.gb_used,
+      gb_remaining: sub.gb_remaining,
+      last_used_at: sub.last_used_at,
+    })
+  } catch (err) {
+    res.status(500).json({ available: false, message: err.message })
+  }
+})
+
 // GET /api/admin/users/:id/logs — real proxy request logs from GlobeData
 router.get('/users/:id/logs', authMiddleware, adminOnly, async (req, res) => {
   try {
