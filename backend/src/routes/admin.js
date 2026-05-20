@@ -147,7 +147,12 @@ router.post('/users/:id/add-gb', authMiddleware, adminOnly, async (req, res) => 
       }
     }
 
-    await User.findByIdAndUpdate(req.params.id, { $inc: { bandwidthPurchased: Number(gb) } })
+    const expiry = new Date()
+    expiry.setDate(expiry.getDate() + 365)
+    await User.findByIdAndUpdate(req.params.id, {
+      $inc: { bandwidthPurchased: Number(gb) },
+      bandwidthExpiry: expiry,
+    })
     res.json({ message: `Added ${gb} GB` })
   } catch (err) {
     res.status(500).json({ message: err.message })
@@ -247,7 +252,10 @@ router.get('/stats', authMiddleware, adminOnly, async (req, res) => {
       { $group: { _id: null, total: { $sum: '$usage.proxiesGenerated' } } }
     ])
     const planCounts = await User.aggregate([
-      { $group: { _id: '$activePlan', count: { $sum: 1 } } }
+      { $group: {
+        _id: { $cond: [{ $gt: ['$bandwidthPurchased', 0] }, 'Active', 'Free Trial'] },
+        count: { $sum: 1 }
+      }}
     ])
     res.json({ totalUsers, totalProxiesGenerated: totalProxiesGenerated[0]?.total || 0, planCounts })
   } catch (err) {
